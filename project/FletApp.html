@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FletApp — Plataforma de logística terrestre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles/tokens.css" />
+<link rel="stylesheet" href="styles/components.css" />
+<link rel="stylesheet" href="styles/shell.css" />
+<style>
+  #root { min-height: 100vh; }
+  @media (max-width: 880px) {
+    .login-brand { display: none !important; }
+    div[style*="grid-template-columns: 1.05fr 1fr"] { grid-template-columns: 1fr !important; }
+  }
+  /* keep quote/pay sidebars from overflowing on mid widths */
+  @media (max-width: 1100px) and (min-width: 981px) {
+    .quote-cols { grid-template-columns: minmax(0,1fr) 240px !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React + Babel (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Tweaks shell (after React, before app) -->
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<!-- FletApp source -->
+<script type="text/babel" src="src/icons.jsx"></script>
+<script type="text/babel" src="src/ui.jsx"></script>
+<script type="text/babel" src="src/data.jsx"></script>
+<script type="text/babel" src="src/map.jsx"></script>
+<script type="text/babel" src="src/shell.jsx"></script>
+<script type="text/babel" src="src/screens/login.jsx"></script>
+<script type="text/babel" src="src/screens/dashboard.jsx"></script>
+<script type="text/babel" src="src/screens/cotizacion.jsx"></script>
+<script type="text/babel" src="src/screens/rastreo.jsx"></script>
+<script type="text/babel" src="src/screens/pagos.jsx"></script>
+<script type="text/babel" src="src/screens/more.jsx"></script>
+<script type="text/babel" src="src/screens/tier2.jsx"></script>
+<script type="text/babel" src="src/app.jsx"></script>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" rx="22" fill="#0066CC"/>
+  <g stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M28 40h26M28 56h34"/><path d="M58 32l16 16-16 16"/>
+  </g>
+</svg>
+</template>
+</body>
+</html>

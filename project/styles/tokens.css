@@ -1,0 +1,159 @@
+/* ============================================================
+   FletApp — Design Tokens
+   Sistema de diseño basado en la especificación oficial
+   ============================================================ */
+
+:root {
+  /* ---- Brand / Primary ---- */
+  --blue-50:  #E6F2FF;   /* light blue — backgrounds suaves */
+  --blue-100: #CCE5FF;
+  --blue-200: #99CBFF;
+  --blue-400: #338ADB;
+  --blue-500: #0066CC;   /* PRIMARY */
+  --blue-600: #0057B0;
+  --blue-700: #003399;   /* DARK — hover/énfasis */
+  --blue-800: #002966;   /* active */
+
+  /* alias */
+  --primary: var(--blue-500);
+  --primary-hover: var(--blue-700);
+  --primary-active: var(--blue-800);
+  --primary-soft: var(--blue-50);
+
+  /* ---- Status ---- */
+  --green-50:  #E3F8E7;
+  --green-500: #00B81C;  /* success / entregado */
+  --green-600: #009317;
+  --green-700: #007610;
+
+  --orange-50:  #FFF3E0;
+  --orange-400: #FFB800;  /* pending */
+  --orange-500: #FF9800;  /* warning / llegado */
+  --orange-600: #E07F00;
+
+  --red-50:  #FDE7E9;
+  --red-500: #DC3545;     /* error / disputa */
+  --red-600: #B02830;
+  --red-700: #941A23;
+
+  --cyan-50:  #E0F7FA;
+  --cyan-500: #00BCD4;    /* info */
+
+  /* ---- Estados de transporte (semánticos) ---- */
+  --st-pending:   #FFB800;
+  --st-transit:   #0066CC;
+  --st-arrived:   #FF9800;
+  --st-delivered: #00B81C;
+  --st-disputed:  #DC3545;
+  --st-paid:      #6B7280;
+
+  /* ---- Neutrals (refinados, ligeramente fríos) ---- */
+  --gray-900: #1A1A1A;   /* texto principal */
+  --gray-700: #404654;
+  --gray-600: #666666;   /* texto secundario */
+  --gray-500: #8A909C;
+  --gray-400: #B6BCC6;
+  --gray-300: #DDDDDD;   /* bordes */
+  --gray-200: #E7EAEF;
+  --gray-100: #F2F4F7;
+  --gray-50:  #F7F8FA;   /* app background */
+  --white:    #FFFFFF;
+
+  --text-strong: var(--gray-900);
+  --text:        var(--gray-700);
+  --text-muted:  var(--gray-600);
+  --text-faint:  var(--gray-500);
+  --text-on-primary: #FFFFFF;
+  --border:      var(--gray-300);
+  --border-soft: var(--gray-200);
+  --surface:     var(--white);
+  --canvas:      var(--gray-50);
+
+  /* ---- Typography ---- */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --fs-display: 32px;   --lh-display: 1.15;  --fw-display: 700;
+  --fs-h1: 26px;        --lh-h1: 1.2;        --fw-h1: 700;
+  --fs-h2: 21px;        --lh-h2: 1.3;        --fw-h2: 650;
+  --fs-h3: 17px;        --lh-h3: 1.4;        --fw-h3: 600;
+  --fs-body: 15px;      --lh-body: 1.55;     --fw-body: 400;
+  --fs-sm: 13px;        --lh-sm: 1.45;
+  --fs-label: 12px;     --lh-label: 1.3;     --fw-label: 600;
+  --fs-cap: 11px;       --lh-cap: 1.3;
+
+  /* ---- Spacing (8px base) ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* ---- Radius ---- */
+  --r-input: 6px;
+  --r-btn: 8px;
+  --r-card: 12px;
+  --r-modal: 16px;
+  --r-pill: 999px;
+
+  /* ---- Shadows ---- */
+  --sh-sm: 0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.06);
+  --sh-md: 0 4px 12px rgba(16,24,40,0.08), 0 2px 4px rgba(16,24,40,0.04);
+  --sh-lg: 0 12px 28px rgba(16,24,40,0.12), 0 4px 8px rgba(16,24,40,0.05);
+  --sh-xl: 0 24px 48px rgba(16,24,40,0.18), 0 8px 16px rgba(16,24,40,0.08);
+  --sh-focus: 0 0 0 3px rgba(0,102,204,0.18);
+
+  /* ---- Layout ---- */
+  --sidebar-w: 248px;
+  --sidebar-collapsed: 72px;
+  --topbar-h: 64px;
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-quick: 120ms;
+  --dur: 200ms;
+  --dur-long: 320ms;
+
+  /* density (tweakable) */
+  --density: 1;
+}
+
+/* ---- Resets / base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+a { color: inherit; text-decoration: none; }
+::selection { background: var(--blue-100); }
+
+h1,h2,h3,h4,p { margin: 0; }
+
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum" 1; letter-spacing: -0.01em; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* scrollbars */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--gray-400); background-clip: padding-box; border: 2px solid transparent; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes dash { to { stroke-dashoffset: 0; } }
+@keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(0,102,204,0.4);} 50%{ box-shadow: 0 0 0 6px rgba(0,102,204,0);} }
