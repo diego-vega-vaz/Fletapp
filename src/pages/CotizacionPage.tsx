@@ -6,7 +6,14 @@ import { Field, Input, Select, Checkbox, Textarea } from '../components/ui/Input
 import { Steps } from '../components/ui/Steps'
 import { StaticRouteMap } from '../components/shared/MexicoMap'
 import { fmtUSD } from '../data/mockData'
+import { createQuote } from '../lib/db'
 import type { Route, NavParams } from '../types'
+
+const CITY_CODE: Record<string, string> = {
+  'Ciudad de México': 'CDMX', 'Monterrey': 'MTY', 'Guadalajara': 'GDL',
+  'Querétaro': 'QRO', 'Veracruz': 'VER', 'Tijuana': 'TIJ',
+  'Mérida': 'MID', 'Puebla': 'PUE', 'León': 'BJX', 'Hermosillo': 'HMO', 'Cancún': 'CUN',
+}
 
 const CITIES = ['Ciudad de México', 'Monterrey', 'Guadalajara', 'Querétaro', 'Veracruz', 'Tijuana', 'Mérida', 'Puebla', 'León', 'Hermosillo', 'Cancún']
 
@@ -205,6 +212,7 @@ export function CotizacionPage({ navigate, toast }: Props) {
     docs: { invoice: true, packing: true, bol: false, certs: false }, terms: false,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [submitting, setSubmitting] = useState(false)
   const set = (k: keyof FormData, v: any) => setData(d => ({ ...d, [k]: v }))
   const price = useMemo(() => calcPrice(data), [data])
   const steps = ['Detalles', 'Ruta', 'Aduanas', 'Resumen']
@@ -225,10 +233,32 @@ export function CotizacionPage({ navigate, toast }: Props) {
 
   const next = () => { if (validate()) { setStep(s => Math.min(s + 1, 3)); window.scrollTo({ top: 0 }) } else toast({ type: 'error', title: 'Revisa los campos marcados' }) }
   const back = () => { setStep(s => Math.max(s - 1, 0)); window.scrollTo({ top: 0 }) }
-  const accept = () => {
+  const accept = async () => {
     if (!data.terms) { toast({ type: 'warning', title: 'Acepta los términos para continuar' }); return }
-    toast({ type: 'success', title: 'Cotización aceptada', msg: 'RES-2026-00147 creada · te llevamos al rastreo' })
-    setTimeout(() => navigate('rastreo', { id: 'RES-2026-00145' }), 900)
+    setSubmitting(true)
+    try {
+      const q = await createQuote({
+        origin: data.origin,
+        origin_code: CITY_CODE[data.origin] ?? data.origin.slice(0, 4).toUpperCase(),
+        dest: data.dest,
+        dest_code: CITY_CODE[data.dest] ?? data.dest.slice(0, 4).toUpperCase(),
+        cargo_type: data.cargoType,
+        containers: String(data.containers),
+        weight: data.weight,
+        cargo_desc: data.description,
+        special: data.special,
+        customs: data.customs,
+        operation: data.operation,
+        incoterm: data.incoterm,
+        price: price.total,
+      })
+      toast({ type: 'success', title: 'Cotización enviada', msg: `${q.ref_id} creada · revísala en Cotizaciones` })
+      setTimeout(() => navigate('cotizaciones'), 900)
+    } catch {
+      toast({ type: 'error', title: 'Error al crear cotización' })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -269,7 +299,7 @@ export function CotizacionPage({ navigate, toast }: Props) {
         </Button>
         {step < 3
           ? <Button variant="primary" iconRight="arrowRight" onClick={next}>Siguiente</Button>
-          : <Button variant="success" icon="checkCircle" onClick={accept}>Aceptar cotización</Button>}
+          : <Button variant="success" icon="checkCircle" loading={submitting} onClick={accept}>Enviar cotización</Button>}
       </div>
     </div>
   )

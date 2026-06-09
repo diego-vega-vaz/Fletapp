@@ -1,61 +1,17 @@
-import { useState, useMemo } from 'react'
-import { QUOTES, fmtUSD } from '../data/mockData'
-
-
+import { useState, useMemo, useEffect } from 'react'
+import { fmtUSD } from '../data/mockData'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
 import { Icon } from '../components/ui/Icon'
-import type { Route, NavParams, Quote } from '../types'
+import { Spinner } from '../components/ui/Misc'
+import { getQuotes, acceptQuote } from '../lib/db'
+import type { DbQuote } from '../lib/db'
+import type { Route, NavParams } from '../types'
 
 interface CotizacionesPageProps {
   navigate: (r: Route, p?: NavParams | null) => void
 }
-
-// Extended quotes with more statuses for a richer demo
-const ALL_QUOTES: Quote[] = [
-  ...QUOTES,
-  {
-    id: 'RES-2026-00135',
-    origin: 'Ciudad de México',
-    dest: 'Monterrey',
-    status: 'accepted',
-    price: 5980,
-    created: '3 jun, 11:00 AM',
-    expires: '4 jun, 11:00 AM',
-    containers: '1× 40ft',
-  },
-  {
-    id: 'RES-2026-00131',
-    origin: 'Guadalajara',
-    dest: 'Ciudad de México',
-    status: 'accepted',
-    price: 3100,
-    created: '1 jun, 8:30 AM',
-    expires: '2 jun, 8:30 AM',
-    containers: '1× 20ft',
-  },
-  {
-    id: 'RES-2026-00128',
-    origin: 'Monterrey',
-    dest: 'Tijuana',
-    status: 'expired',
-    price: 8750,
-    created: '28 may, 2:00 PM',
-    expires: '29 may, 2:00 PM',
-    containers: '2× 20ft',
-  },
-  {
-    id: 'RES-2026-00124',
-    origin: 'Ciudad de México',
-    dest: 'Veracruz',
-    status: 'expired',
-    price: 2890,
-    created: '25 may, 9:00 AM',
-    expires: '26 may, 9:00 AM',
-    containers: '1× 20ft',
-  },
-]
 
 type QuoteStatus = 'pending' | 'accepted' | 'expired'
 
@@ -78,25 +34,53 @@ function QuoteBadge({ status }: { status: string }) {
   )
 }
 
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
   const [search, setSearch] = useState('')
+  const [quotes, setQuotes] = useState<DbQuote[]>([])
+  const [loading, setLoading] = useState(true)
+  const [accepting, setAccepting] = useState<string | null>(null)
+
+  function loadQuotes() {
+    setLoading(true)
+    getQuotes()
+      .then(setQuotes)
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadQuotes()
+  }, [])
+
+  async function handleAccept(quote: DbQuote) {
+    setAccepting(quote.id)
+    try {
+      await acceptQuote(quote.id)
+      loadQuotes()
+    } finally {
+      setAccepting(null)
+    }
+  }
 
   const counts = useMemo(() => ({
-    pending:  ALL_QUOTES.filter(q => q.status === 'pending').length,
-    accepted: ALL_QUOTES.filter(q => q.status === 'accepted').length,
-    expired:  ALL_QUOTES.filter(q => q.status === 'expired').length,
-  }), [])
+    pending:  quotes.filter(q => q.status === 'pending').length,
+    accepted: quotes.filter(q => q.status === 'accepted').length,
+    expired:  quotes.filter(q => q.status === 'expired').length,
+  }), [quotes])
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return ALL_QUOTES
+    if (!search.trim()) return quotes
     const q = search.toLowerCase()
-    return ALL_QUOTES.filter(
+    return quotes.filter(
       quote =>
-        quote.id.toLowerCase().includes(q) ||
+        quote.ref_id.toLowerCase().includes(q) ||
         quote.origin.toLowerCase().includes(q) ||
         quote.dest.toLowerCase().includes(q),
     )
-  }, [search])
+  }, [quotes, search])
 
   const summaryCards = [
     {
@@ -159,7 +143,7 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
               </div>
               <div>
                 <div style={{ fontSize: 28, fontWeight: 750, color: 'var(--text-strong)', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-                  {card.count}
+                  {loading ? '—' : card.count}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginTop: 2 }}>
                   {card.label}
@@ -181,19 +165,29 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <p style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 'auto' }}>
-          {filtered.length} cotizaciones
-        </p>
+        {!loading && (
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 'auto' }}>
+            {filtered.length} cotizaciones
+          </p>
+        )}
       </div>
 
       {/* Table */}
       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+            <Spinner size={32} />
+          </div>
+        ) : filtered.length === 0 ? (
           <div style={{ padding: '64px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-            <p style={{ fontWeight: 600, color: 'var(--text-strong)', marginBottom: 4 }}>Sin resultados</p>
+            <p style={{ fontWeight: 600, color: 'var(--text-strong)', marginBottom: 4 }}>
+              {quotes.length === 0 ? 'Sin cotizaciones' : 'Sin resultados'}
+            </p>
             <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>
-              No se encontraron cotizaciones con ese criterio
+              {quotes.length === 0
+                ? 'Solicita tu primera cotización de flete.'
+                : 'No se encontraron cotizaciones con ese criterio'}
             </p>
           </div>
         ) : (
@@ -215,7 +209,7 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                 <tr key={q.id}>
                   <td>
                     <span className="mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-strong)' }}>
-                      {q.id}
+                      {q.ref_id}
                     </span>
                   </td>
                   <td>
@@ -226,15 +220,15 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                     </div>
                   </td>
                   <td>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{q.containers}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{q.containers ?? '—'}</span>
                   </td>
                   <td>
                     <span className="tnum" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>
-                      {fmtUSD(q.price)}
+                      {q.price != null ? fmtUSD(q.price) : '—'}
                     </span>
                   </td>
                   <td>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{q.created}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{fmtDate(q.created_at)}</span>
                   </td>
                   <td>
                     <span
@@ -244,7 +238,7 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                         fontWeight: q.status === 'pending' ? 600 : 400,
                       }}
                     >
-                      {q.expires}
+                      {fmtDate(q.expires_at)}
                     </span>
                   </td>
                   <td>
@@ -257,7 +251,8 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                           variant="success"
                           size="sm"
                           icon="checkCircle"
-                          onClick={() => navigate('cotizacion', { id: q.id })}
+                          loading={accepting === q.id}
+                          onClick={() => handleAccept(q)}
                         >
                           Aceptar
                         </Button>
@@ -266,7 +261,7 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                         variant="ghost"
                         size="sm"
                         icon="eye"
-                        onClick={() => navigate('cotizacion', { id: q.id })}
+                        onClick={() => navigate('cotizacion', { id: q.ref_id })}
                       >
                         Ver
                       </Button>

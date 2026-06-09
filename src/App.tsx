@@ -102,7 +102,7 @@ export default function App() {
       case 'pago':         return <PagosPage navigate={navigate} toast={toast} params={params} />
       case 'pagos':        return <FacturasPage navigate={navigate} toast={toast} />
       case 'soporte':      return <SoportePage navigate={navigate} toast={toast} />
-      case 'ticket':       return <TicketDetailPage navigate={navigate} toast={toast} />
+      case 'ticket':       return <TicketDetailPage navigate={navigate} toast={toast} params={params} />
       case 'config':       return <ConfigPage user={user} />
       default:             return <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
     }

@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
 import { Modal } from '../components/ui/Modal'
 import { Field, Textarea, Select } from '../components/ui/Input'
-
+import { Spinner } from '../components/ui/Misc'
+import { getTickets, createTicket, type DbTicket } from '../lib/db'
 import type { Route, NavParams } from '../types'
 
 interface Props {
@@ -13,42 +14,50 @@ interface Props {
 }
 
 function TicketBadge({ status }: { status: string }) {
-  const cfg = {
-    transit:   { label: 'En progreso', color: 'var(--primary)', bg: 'var(--blue-50)' },
-    resolved:  { label: 'Resuelto', color: 'var(--green-600)', bg: 'var(--green-50)' },
-    pending:   { label: 'Pendiente', color: 'var(--orange-600)', bg: 'var(--orange-50)' },
-    closed:    { label: 'Cerrado', color: 'var(--text-muted)', bg: 'var(--gray-100)' },
-  }[status] ?? { label: status, color: 'var(--text-muted)', bg: 'var(--gray-100)' }
-  return (
-    <span className="badge badge-soft" style={{ '--bg': cfg.bg, '--fg': cfg.color, fontSize: 11.5 } as React.CSSProperties}>
-      {cfg.label}
-    </span>
-  )
+  const cfg: Record<string, { label: string; color: string; bg: string }> = {
+    open:        { label: 'Abierto',     color: 'var(--primary)',    bg: 'var(--blue-50)' },
+    in_progress: { label: 'En progreso', color: 'var(--primary)',    bg: 'var(--blue-50)' },
+    resolved:    { label: 'Resuelto',    color: 'var(--green-600)', bg: 'var(--green-50)' },
+    closed:      { label: 'Cerrado',     color: 'var(--text-muted)', bg: 'var(--gray-100)' },
+  }
+  const c = cfg[status] ?? cfg.open
+  return <span className="badge badge-soft" style={{ '--bg': c.bg, '--fg': c.color, fontSize: 11.5 } as React.CSSProperties}>{c.label}</span>
 }
 
-const MOCK_TICKETS = [
-  { id: '#1234', subject: 'Pago rechazado en envío RES-2026-00143', status: 'transit', prio: 'Alta', date: 'Ayer, 10:30 AM', agent: 'Carlos Méndez' },
-  { id: '#1228', subject: 'Retraso en entrega QRO-TIJ', status: 'resolved', prio: 'Media', date: '2 jun, 3:15 PM', agent: 'Ana López' },
-  { id: '#1215', subject: 'Factura XML con error en RFC', status: 'closed', prio: 'Baja', date: '28 may, 11:00 AM', agent: 'Luis Torres' },
-]
-
 export function SoportePage({ navigate, toast }: Props) {
+  const [tickets, setTickets] = useState<DbTicket[]>([])
+  const [loading, setLoading] = useState(true)
   const [newOpen, setNewOpen] = useState(false)
   const [subject, setSubject] = useState('')
   const [category, setCategory] = useState('Pagos')
   const [desc, setDesc] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const submit = () => {
+  const loadTickets = () => {
+    setLoading(true)
+    getTickets().then(setTickets).finally(() => setLoading(false))
+  }
+
+  useEffect(() => { loadTickets() }, [])
+
+  const submit = async () => {
     if (!subject.trim() || !desc.trim()) { toast({ type: 'warning', title: 'Completa el asunto y la descripción' }); return }
     setSubmitting(true)
-    setTimeout(() => {
-      setSubmitting(false)
+    try {
+      await createTicket({ subject, category, description: desc })
       setNewOpen(false)
       setSubject(''); setDesc('')
+      loadTickets()
       toast({ type: 'success', title: 'Ticket creado', msg: 'Te responderemos en menos de 2 horas' })
-    }, 1400)
+    } catch {
+      toast({ type: 'error', title: 'Error al crear ticket' })
+    } finally {
+      setSubmitting(false)
+    }
   }
+
+  const open = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length
+  const resolved = tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length
 
   return (
     <div>
@@ -60,11 +69,10 @@ export function SoportePage({ navigate, toast }: Props) {
         <Button variant="primary" icon="plus" onClick={() => setNewOpen(true)}>Nuevo ticket</Button>
       </div>
 
-      {/* Stats */}
       <div className="grid-3" style={{ marginBottom: 22 }}>
         {[
-          { icon: 'fileText', color: 'var(--primary)', bg: 'var(--blue-50)', value: '3', label: 'Tickets abiertos' },
-          { icon: 'checkCircle', color: 'var(--green-600)', bg: 'var(--green-50)', value: '12', label: 'Tickets resueltos' },
+          { icon: 'fileText', color: 'var(--primary)', bg: 'var(--blue-50)', value: loading ? '—' : String(open), label: 'Tickets abiertos' },
+          { icon: 'checkCircle', color: 'var(--green-600)', bg: 'var(--green-50)', value: loading ? '—' : String(resolved), label: 'Tickets resueltos' },
           { icon: 'clock', color: 'var(--orange-600)', bg: 'var(--orange-50)', value: '< 2h', label: 'Tiempo de respuesta' },
         ].map(c => (
           <Card key={c.label} hover style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -80,63 +88,70 @@ export function SoportePage({ navigate, toast }: Props) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: 18, alignItems: 'start' }} className="dash-cols">
-        {/* Ticket list */}
         <Card pad={false}>
           <div style={{ padding: '18px 20px 10px' }}><div className="section-title">Mis tickets</div></div>
-          <table className="data-table">
-            <thead>
-              <tr><th>Ticket</th><th>Asunto</th><th>Prioridad</th><th>Estado</th><th>Agente</th><th></th></tr>
-            </thead>
-            <tbody>
-              {MOCK_TICKETS.map(t => (
-                <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => navigate('ticket', { id: t.id })}>
-                  <td>
-                    <span className="mono" style={{ fontWeight: 700, color: 'var(--primary)', fontSize: 13 }}>{t.id}</span>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginTop: 2 }}>{t.date}</div>
-                  </td>
-                  <td style={{ fontSize: 13.5, color: 'var(--text-strong)', fontWeight: 550, maxWidth: 260 }}>{t.subject}</td>
-                  <td>
-                    <span className="badge badge-soft" style={{
-                      '--bg': t.prio === 'Alta' ? 'var(--red-50)' : t.prio === 'Media' ? 'var(--orange-50)' : 'var(--gray-100)',
-                      '--fg': t.prio === 'Alta' ? 'var(--red-500)' : t.prio === 'Media' ? 'var(--orange-600)' : 'var(--text-muted)',
-                      fontSize: 11.5,
-                    } as React.CSSProperties}>{t.prio}</span>
-                  </td>
-                  <td><TicketBadge status={t.status} /></td>
-                  <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t.agent}</td>
-                  <td>
-                    <Button size="sm" variant="ghost" iconRight="chevronRight" onClick={e => { e.stopPropagation(); navigate('ticket', { id: t.id }) }}>Ver</Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {loading ? (
+            <div style={{ padding: 48, textAlign: 'center' }}><Spinner size={28} /></div>
+          ) : tickets.length === 0 ? (
+            <div style={{ padding: 48, textAlign: 'center' }}>
+              <Icon name="messageSquare" size={32} style={{ color: 'var(--border)', marginBottom: 10 }} />
+              <p style={{ fontSize: 14, color: 'var(--text-faint)', marginBottom: 14 }}>No tienes tickets de soporte aún.</p>
+              <Button variant="primary" size="sm" icon="plus" onClick={() => setNewOpen(true)}>Crear ticket</Button>
+            </div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr><th>Ticket</th><th>Asunto</th><th>Prioridad</th><th>Estado</th><th>Fecha</th><th></th></tr>
+              </thead>
+              <tbody>
+                {tickets.map(t => (
+                  <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => navigate('ticket', { id: t.ticket_number })}>
+                    <td>
+                      <span className="mono" style={{ fontWeight: 700, color: 'var(--primary)', fontSize: 13 }}>{t.ticket_number}</span>
+                    </td>
+                    <td style={{ fontSize: 13.5, color: 'var(--text-strong)', fontWeight: 550, maxWidth: 260 }}>{t.subject}</td>
+                    <td>
+                      <span className="badge badge-soft" style={{
+                        '--bg': t.priority === 'Alta' ? 'var(--red-50)' : t.priority === 'Media' ? 'var(--orange-50)' : 'var(--gray-100)',
+                        '--fg': t.priority === 'Alta' ? 'var(--red-500)' : t.priority === 'Media' ? 'var(--orange-600)' : 'var(--text-muted)',
+                        fontSize: 11.5,
+                      } as React.CSSProperties}>{t.priority}</span>
+                    </td>
+                    <td><TicketBadge status={t.status} /></td>
+                    <td style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                      {new Date(t.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                    </td>
+                    <td>
+                      <Button size="sm" variant="ghost" iconRight="chevronRight" onClick={e => { e.stopPropagation(); navigate('ticket', { id: t.ticket_number }) }}>Ver</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </Card>
 
-        {/* Right column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {/* Live chat */}
           <Card>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--green-500)', display: 'inline-block' }} />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green-500)', display: 'inline-block' }} />
               <div className="section-title">Chat en vivo</div>
             </div>
             <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
-              Un agente está disponible ahora mismo. Tiempo de espera: <strong style={{ color: 'var(--text-strong)' }}>&lt; 2 minutos</strong>.
+              Un agente está disponible ahora. Tiempo de espera: <strong style={{ color: 'var(--text-strong)' }}>&lt; 2 min</strong>.
             </p>
-            <Button variant="primary" icon="chat" block onClick={() => toast({ type: 'info', title: 'Chat en vivo', msg: 'Conectando con María García…' })}>
+            <Button variant="primary" icon="chat" block onClick={() => toast({ type: 'info', title: 'Chat en vivo', msg: 'Conectando con un agente…' })}>
               Iniciar chat en vivo
             </Button>
           </Card>
 
-          {/* Contact options */}
           <Card>
             <div className="section-title" style={{ marginBottom: 14 }}>Otros canales</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
                 { icon: 'phone', label: 'Teléfono', sub: '+52 (55) 8000-3538 · Lun–Vie 8–20h', color: 'var(--green-600)' },
                 { icon: 'whatsapp', label: 'WhatsApp', sub: 'Respuesta típica < 1 hora', color: 'var(--green-500)' },
-                { icon: 'mail', label: 'Correo', sub: 'soporte@fletapp.mx · 24h hábiles', color: 'var(--primary)' },
+                { icon: 'mail', label: 'Correo', sub: 'soporte@fletapp.mx', color: 'var(--primary)' },
               ].map(c => (
                 <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--border-soft)', borderRadius: 10, cursor: 'pointer' }}
                   onClick={() => toast({ type: 'info', title: c.label, msg: c.sub })}>
@@ -151,33 +166,13 @@ export function SoportePage({ navigate, toast }: Props) {
               ))}
             </div>
           </Card>
-
-          {/* FAQ */}
-          <Card>
-            <div className="section-title" style={{ marginBottom: 14 }}>Preguntas frecuentes</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {[
-                '¿Cómo cancelo un envío?',
-                '¿Cuándo se genera mi factura CFDI?',
-                '¿Qué hago si mi pago fue rechazado?',
-                '¿Cómo añado un seguro de carga?',
-              ].map((q, i, arr) => (
-                <div key={q} style={{ padding: '11px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--border-soft)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-                  onClick={() => toast({ type: 'info', title: q })}>
-                  <span style={{ fontSize: 13.5, color: 'var(--text)' }}>{q}</span>
-                  <Icon name="chevronRight" size={15} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
-                </div>
-              ))}
-            </div>
-          </Card>
         </div>
       </div>
 
-      {/* New ticket modal */}
       <Modal open={newOpen} onClose={() => setNewOpen(false)} title="Nuevo ticket de soporte" width={520}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Field label="Asunto">
-            <input className="input" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Describe brevemente tu problema" />
+            <input className="input" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Describe brevemente tu problema" autoFocus />
           </Field>
           <Field label="Categoría">
             <Select value={category} onChange={e => setCategory(e.target.value)}>

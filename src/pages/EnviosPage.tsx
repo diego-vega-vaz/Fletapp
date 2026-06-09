@@ -1,10 +1,13 @@
-import { useState, useMemo } from 'react'
-import { SHIPMENTS, fmtUSD } from '../data/mockData'
+import { useState, useMemo, useEffect } from 'react'
+import { fmtUSD } from '../data/mockData'
 import { StatusBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Input, Select } from '../components/ui/Input'
 import { Tabs } from '../components/ui/Tabs'
-import type { Route, NavParams, Shipment } from '../types'
+import { Spinner } from '../components/ui/Misc'
+import { getShipments } from '../lib/db'
+import type { DbShipment } from '../lib/db'
+import type { Route, NavParams } from '../types'
 
 interface EnviosPageProps {
   navigate: (r: Route, p?: NavParams | null) => void
@@ -30,9 +33,18 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
   const [tab, setTab] = useState('activos')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [shipments, setShipments] = useState<DbShipment[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    getShipments()
+      .then(setShipments)
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = useMemo(() => {
-    let list: Shipment[] = SHIPMENTS
+    let list = shipments
 
     if (tab === 'activos') {
       list = list.filter(s => s.status === 'transit' || s.status === 'waiting' || s.status === 'pending' || s.status === 'delayed')
@@ -48,17 +60,17 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
       const q = search.toLowerCase()
       list = list.filter(
         s =>
-          s.id.toLowerCase().includes(q) ||
+          s.ref_id.toLowerCase().includes(q) ||
           s.origin.toLowerCase().includes(q) ||
           s.dest.toLowerCase().includes(q) ||
-          s.cargo.toLowerCase().includes(q),
+          (s.cargo ?? '').toLowerCase().includes(q),
       )
     }
 
     return list
-  }, [tab, search, statusFilter])
+  }, [shipments, tab, search, statusFilter])
 
-  function getActions(s: Shipment) {
+  function getActions(s: DbShipment) {
     const actions: React.ReactNode[] = []
 
     if (s.status === 'transit' || s.status === 'delayed') {
@@ -68,21 +80,21 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
           variant="secondary"
           size="sm"
           icon="mapPin"
-          onClick={() => navigate('rastreo', { id: s.id })}
+          onClick={() => navigate('rastreo', { id: s.ref_id })}
         >
           Rastrear
         </Button>,
       )
     }
 
-    if (s.status === 'waiting' || (s.paid < s.price)) {
+    if (s.status === 'waiting' || s.paid < s.price) {
       actions.push(
         <Button
           key="pagar"
           variant="success"
           size="sm"
           icon="creditCard"
-          onClick={() => { onPay(s.id); navigate('pago', { id: s.id }) }}
+          onClick={() => { onPay(s.ref_id); navigate('pago', { id: s.ref_id }) }}
         >
           Pagar
         </Button>,
@@ -95,7 +107,7 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
         variant="ghost"
         size="sm"
         icon="eye"
-        onClick={() => navigate('detalle', { id: s.id })}
+        onClick={() => navigate('detalle', { id: s.ref_id })}
       >
         Ver
       </Button>,
@@ -141,12 +153,18 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
 
       {/* Table */}
       <div className="card" style={{ marginTop: 16, overflow: 'hidden', padding: 0 }}>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+            <Spinner size={32} />
+          </div>
+        ) : filtered.length === 0 ? (
           <div style={{ padding: '64px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
             <p style={{ fontWeight: 600, color: 'var(--text-strong)', marginBottom: 4 }}>Sin envíos</p>
             <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>
-              No se encontraron envíos con los filtros aplicados
+              {shipments.length === 0
+                ? 'Aún no tienes envíos. ¡Crea tu primera cotización!'
+                : 'No se encontraron envíos con los filtros aplicados'}
             </p>
           </div>
         ) : (
@@ -168,14 +186,14 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
                 <tr key={s.id}>
                   <td>
                     <span className="mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-strong)' }}>
-                      {s.id}
+                      {s.ref_id}
                     </span>
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: 'var(--text-strong)', fontSize: 14 }}>
-                      <span style={{ color: 'var(--text-faint)', fontWeight: 500, fontSize: 13 }}>{s.oCode}</span>
+                      <span style={{ color: 'var(--text-faint)', fontWeight: 500, fontSize: 13 }}>{s.origin_code}</span>
                       <span style={{ color: 'var(--gray-400)' }}>→</span>
-                      <span style={{ color: 'var(--text-faint)', fontWeight: 500, fontSize: 13 }}>{s.dCode}</span>
+                      <span style={{ color: 'var(--text-faint)', fontWeight: 500, fontSize: 13 }}>{s.dest_code}</span>
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>
                       {s.origin.split(',')[0]} → {s.dest}
@@ -185,10 +203,10 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
                     <StatusBadge status={s.status} />
                   </td>
                   <td>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.cargo}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.cargo ?? '—'}</span>
                   </td>
                   <td>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.containers}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.containers ?? '—'}</span>
                   </td>
                   <td>
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }} className="tnum">
@@ -201,8 +219,10 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
                     )}
                   </td>
                   <td>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.etaShort}</span>
-                    <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{s.depart.split(',')[0]}</div>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{s.eta_short ?? '—'}</span>
+                    <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+                      {s.depart_at ? new Date(s.depart_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—'}
+                    </div>
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -217,7 +237,7 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
       </div>
 
       {/* Footer count */}
-      {filtered.length > 0 && (
+      {!loading && filtered.length > 0 && (
         <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 12 }}>
           {filtered.length} {filtered.length === 1 ? 'envío' : 'envíos'} encontrados
         </p>
