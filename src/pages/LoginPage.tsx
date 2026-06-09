@@ -3,25 +3,30 @@ import { Logo } from '../components/ui/Logo'
 import { Button } from '../components/ui/Button'
 import { Field, Input, Checkbox } from '../components/ui/Input'
 import { Icon } from '../components/ui/Icon'
+import { supabase } from '../lib/supabase'
 
 interface LoginPageProps {
   onLogin: () => void
+  onRegister: () => void
 }
 
-export function LoginPage({ onLogin }: LoginPageProps) {
-  const [email, setEmail] = useState('diego@grupologistico.mx')
-  const [password, setPassword] = useState('••••••••••')
+export function LoginPage({ onLogin, onRegister }: LoginPageProps) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
+    setError('')
+    if (!email || !password) { setError('Ingresa tu correo y contraseña'); return }
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      onLogin()
-    }, 1300)
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
+    if (err) { setError('Correo o contraseña incorrectos'); return }
+    onLogin()
   }
 
   const benefits = [
@@ -148,8 +153,14 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </p>
           </div>
 
+          {error && (
+            <div style={{ padding: '10px 14px', background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 8, color: 'var(--red-500)', fontSize: 13.5, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name="alertCircle" size={15} />{error}
+            </div>
+          )}
+
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <Field label="Correo / RFC">
+            <Field label="Correo electrónico">
               <Input
                 type="email"
                 iconLeft="mail"
@@ -209,13 +220,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
           <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)' }}>
             ¿No tienes cuenta?{' '}
-            <a
-              href="#"
-              style={{ color: 'var(--primary)', fontWeight: 650 }}
-              onClick={e => e.preventDefault()}
-            >
+            <button onClick={onRegister} style={{ color: 'var(--primary)', fontWeight: 650, border: 'none', background: 'none', cursor: 'pointer', padding: 0, fontSize: 14 }}>
               Regístrate aquí
-            </a>
+            </button>
           </p>
         </div>
 

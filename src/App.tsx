@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { supabase } from './lib/supabase'
 import { AppShell } from './components/layout/AppShell'
 import { LoginPage } from './pages/LoginPage'
+import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CotizacionPage } from './pages/CotizacionPage'
 import { CotizacionesPage } from './pages/CotizacionesPage'
@@ -14,20 +16,49 @@ import { TicketDetailPage } from './pages/TicketDetailPage'
 import { ConfigPage } from './pages/ConfigPage'
 import type { Route, NavParams, User } from './types'
 
-const DEFAULT_USER: User = {
-  name: 'Diego Parado',
-  company: 'Grupo Logístico del Norte',
-  email: 'diego@grupologistico.mx',
-}
-
 interface Toast { id: number; type: string; title: string; msg?: string }
 
 export default function App() {
   const [authed, setAuthed] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [showRegister, setShowRegister] = useState(false)
   const [route, setRoute] = useState<Route>('dashboard')
   const [params, setParams] = useState<NavParams | null>(null)
-  const [user] = useState<User>(DEFAULT_USER)
+  const [user, setUser] = useState<User>({ name: '', company: '', email: '' })
   const [toasts, setToasts] = useState<Toast[]>([])
+
+  useEffect(() => {
+    // Check existing session on load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const u = session.user
+        setUser({
+          name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Usuario',
+          company: u.user_metadata?.company || '',
+          email: u.email || '',
+        })
+        setAuthed(true)
+      }
+      setAuthLoading(false)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const u = session.user
+        setUser({
+          name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Usuario',
+          company: u.user_metadata?.company || '',
+          email: u.email || '',
+        })
+        setAuthed(true)
+      } else {
+        setAuthed(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const navigate = useCallback((r: Route, p: NavParams | null = null) => {
     setRoute(r)
@@ -41,10 +72,24 @@ export default function App() {
     setTimeout(() => setToasts(ts => ts.filter(x => x.id !== id)), 4000)
   }, [])
 
-  const login = () => { setAuthed(true); setRoute('dashboard') }
-  const logout = () => { setAuthed(false); setRoute('dashboard') }
+  const logout = async () => {
+    await supabase.auth.signOut()
+    setAuthed(false)
+    setRoute('dashboard')
+  }
 
-  if (!authed) return <LoginPage onLogin={login} />
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span className="spinner" style={{ width: 32, height: 32 }} />
+      </div>
+    )
+  }
+
+  if (!authed) {
+    if (showRegister) return <RegisterPage onBack={() => setShowRegister(false)} />
+    return <LoginPage onLogin={() => setAuthed(true)} onRegister={() => setShowRegister(true)} />
+  }
 
   const page = (() => {
     switch (route) {
@@ -69,7 +114,6 @@ export default function App() {
         {page}
       </AppShell>
 
-      {/* Toast stack */}
       <div style={{ position: 'fixed', bottom: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 10, zIndex: 9999, pointerEvents: 'none' }}>
         {toasts.map(t => (
           <div key={t.id} style={{
