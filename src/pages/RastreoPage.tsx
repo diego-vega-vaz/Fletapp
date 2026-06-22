@@ -6,7 +6,9 @@ import { StatusBadge } from '../components/ui/Badge'
 import { Modal } from '../components/ui/Modal'
 import { Toggle } from '../components/ui/Input'
 import { MexicoMap } from '../components/shared/MexicoMap'
-import { SHIPMENTS, TIMELINE, ROUTE_CDMX_MTY, fmtUSD } from '../data/mockData'
+import { Spinner } from '../components/ui/Misc'
+import { getShipment, type DbShipment } from '../lib/db'
+import { fmtUSD } from '../data/mockData'
 import type { Route, NavParams } from '../types'
 
 interface Props {
@@ -15,22 +17,63 @@ interface Props {
   toast: (t: { type: string; title: string; msg?: string }) => void
 }
 
+type TLState = 'done' | 'active' | 'future'
+
+function buildTimeline(s: DbShipment): { state: TLState; title: string; time: string; place: string; detail: string; icon: string }[] {
+  const delivered = s.status === 'delivered' || s.status === 'paid'
+  const inTransit = s.status === 'transit' || s.status === 'delayed'
+  const created = new Date(s.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return [
+    {
+      state: 'done',
+      title: 'Cotización confirmada',
+      time: created,
+      place: s.origin,
+      detail: `Envío ${s.ref_id} registrado`,
+      icon: 'checkCircle',
+    },
+    {
+      state: (s.progress > 0 || inTransit || delivered) ? 'done' : 'future',
+      title: 'Carga recolectada',
+      time: s.depart_at || '—',
+      place: `${s.origin} (${s.origin_code ?? ''})`,
+      detail: `${s.containers ?? '—'} · ${s.cargo ?? 'Mercancía'}`,
+      icon: 'package',
+    },
+    {
+      state: delivered ? 'done' : inTransit ? 'active' : 'future',
+      title: 'En tránsito',
+      time: inTransit ? `${Math.round(s.progress * 100)}% completado` : delivered ? 'Completado' : 'Pendiente',
+      place: s.current_location || '—',
+      detail: inTransit ? `ETA: ${s.eta ?? '—'}` : '',
+      icon: 'truck',
+    },
+    {
+      state: delivered ? 'done' : (s.status === 'waiting') ? 'active' : 'future',
+      title: delivered ? 'Entregado' : 'Entrega en destino',
+      time: delivered ? (s.eta || '—') : s.status === 'waiting' ? 'Esperando pago' : '—',
+      place: `${s.dest} (${s.dest_code ?? ''})`,
+      detail: delivered ? 'Carga entregada al destinatario' : '',
+      icon: 'mapPin',
+    },
+  ]
+}
+
 export function RastreoPage({ navigate, params, toast }: Props) {
-  const shipment = SHIPMENTS.find(s => s.id === params?.id) ?? SHIPMENTS[0]
+  const [shipment, setShipment] = useState<DbShipment | null>(null)
+  const [loading, setLoading] = useState(true)
   const [chatOpen, setChatOpen] = useState(false)
   const [msg, setMsg] = useState('')
   const [chatMsgs, setChatMsgs] = useState([
     { from: 'agent', text: '¡Hola! Soy el asistente de FletApp. ¿En qué puedo ayudarte con tu envío?' },
   ])
   const [notifs, setNotifs] = useState({ near: true, arrived: true, changes: true })
-  const [lastUpdate] = useState('hace 15 min')
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      toast({ type: 'info', title: `Tu envío está en ${shipment.current}`, msg: 'Actualización en tiempo real' })
-    }, 3000)
-    return () => clearTimeout(t)
-  }, [])
+    const id = params?.id
+    if (!id) { setLoading(false); return }
+    getShipment(id).then(setShipment).finally(() => setLoading(false))
+  }, [params?.id])
 
   const sendMsg = () => {
     if (!msg.trim()) return
@@ -41,6 +84,32 @@ export function RastreoPage({ navigate, params, toast }: Props) {
       setChatMsgs(ms => [...ms, { from: 'agent', text: 'Entendido. Estoy revisando la información de tu envío. Dame un momento.' }])
     }, 1200)
   }
+
+  if (loading) {
+    return <div style={{ padding: '80px 24px', textAlign: 'center' }}><Spinner size={32} /></div>
+  }
+
+  if (!shipment) {
+    return (
+      <div style={{ padding: '80px 24px', textAlign: 'center' }}>
+        <Icon name="mapPin" size={32} style={{ color: 'var(--border)', marginBottom: 12 }} />
+        <p style={{ fontWeight: 600, color: 'var(--text-strong)', marginBottom: 6 }}>Envío no encontrado</p>
+        <p style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 16 }}>No se pudo cargar el rastreo del envío.</p>
+        <Button variant="secondary" onClick={() => navigate('envios')}>Volver a Envíos</Button>
+      </div>
+    )
+  }
+
+  const timeline = buildTimeline(shipment)
+  const remaining = shipment.price - shipment.paid
+  const route = [
+    { x: 30, y: 36, city: shipment.origin_code || shipment.origin.split(',')[0], type: 'origin' as const },
+    { x: 48, y: 46, city: '' },
+    { x: 68, y: 30, city: shipment.dest_code || shipment.dest.split(',')[0], type: 'dest' as const },
+  ]
+  const carrier = shipment.carrier || 'Por asignar'
+  const driver = shipment.driver || 'Por asignar'
+  const plate = shipment.plate && shipment.plate !== '—' ? shipment.plate : 'Por asignar'
 
   return (
     <div>
@@ -54,15 +123,15 @@ export function RastreoPage({ navigate, params, toast }: Props) {
             <span style={{ fontSize: 13.5, color: 'var(--text-faint)' }}>Rastreo</span>
           </div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            Rastreo <span className="mono" style={{ fontSize: 18, fontWeight: 600, color: 'var(--primary)' }}>{shipment.id}</span>
+            Rastreo <span className="mono" style={{ fontSize: 18, fontWeight: 600, color: 'var(--primary)' }}>{shipment.ref_id}</span>
           </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
             <StatusBadge status={shipment.status} />
-            <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Última actualización: {lastUpdate}</span>
+            <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>ETA: {shipment.eta || '—'}</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button variant="secondary" icon="phone" onClick={() => toast({ type: 'info', title: 'Conductor: Juan García', msg: '+52 555-1234' })}>Llamar</Button>
+          <Button variant="secondary" icon="phone" onClick={() => toast({ type: 'info', title: `Conductor: ${driver}`, msg: carrier })}>Llamar</Button>
           <Button variant="primary" icon="chat" onClick={() => setChatOpen(true)}>Chat</Button>
         </div>
       </div>
@@ -70,18 +139,18 @@ export function RastreoPage({ navigate, params, toast }: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 18, alignItems: 'start' }} className="track-cols">
         {/* Left: Map + Timeline */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <MexicoMap route={ROUTE_CDMX_MTY} progress={shipment.progress} height={340} />
+          <MexicoMap route={route} progress={shipment.progress} height={340} />
 
           {/* Info card */}
           <Card>
             <div className="section-title" style={{ marginBottom: 14 }}>Información del envío</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
-                ['Origen', `${shipment.origin} (${shipment.oCode})`],
-                ['Destino', `${shipment.dest} (${shipment.dCode})`],
-                ['Distancia', shipment.distance],
-                ['Tiempo total', shipment.duration],
-                ['ETA', shipment.eta],
+                ['Origen', `${shipment.origin} (${shipment.origin_code ?? ''})`],
+                ['Destino', `${shipment.dest} (${shipment.dest_code ?? ''})`],
+                ['Distancia', shipment.distance || '—'],
+                ['Tiempo total', shipment.duration || '—'],
+                ['ETA', shipment.eta || '—'],
                 ['Progreso', `${Math.round(shipment.progress * 100)}%`],
               ].map(([l, v]) => (
                 <div key={l}>
@@ -96,8 +165,8 @@ export function RastreoPage({ navigate, params, toast }: Props) {
                 <Icon name="truck" size={20} style={{ color: 'var(--primary)' }} />
               </span>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--text-strong)' }}>Freightways MX · FORD F700</div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Placa ABC-1234 · Juan García</div>
+                <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--text-strong)' }}>{carrier}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Placa {plate} · {driver}</div>
               </div>
             </div>
           </Card>
@@ -106,13 +175,11 @@ export function RastreoPage({ navigate, params, toast }: Props) {
           <Card>
             <div className="section-title" style={{ marginBottom: 16 }}>Historial de tránsito</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {TIMELINE.map((ev, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, position: 'relative', paddingBottom: i < TIMELINE.length - 1 ? 20 : 0 }}>
-                  {/* connector */}
-                  {i < TIMELINE.length - 1 && (
+              {timeline.map((ev, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, position: 'relative', paddingBottom: i < timeline.length - 1 ? 20 : 0 }}>
+                  {i < timeline.length - 1 && (
                     <div style={{ position: 'absolute', left: 15, top: 32, bottom: 0, width: 2, background: ev.state === 'future' ? 'var(--border-soft)' : ev.state === 'active' ? 'var(--primary)' : 'var(--green-500)', opacity: ev.state === 'future' ? 0.5 : 1 }} />
                   )}
-                  {/* dot */}
                   <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: ev.state === 'done' ? 'var(--green-500)' : ev.state === 'active' ? 'var(--primary)' : 'var(--gray-100)',
                     color: ev.state === 'future' ? 'var(--text-faint)' : '#fff',
@@ -125,7 +192,7 @@ export function RastreoPage({ navigate, params, toast }: Props) {
                     <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--text-strong)' }}>{ev.title}</div>
                     <div style={{ fontSize: 12.5, color: 'var(--primary)', fontWeight: 600, marginTop: 2 }}>{ev.time}</div>
                     <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>{ev.place}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>{ev.detail}</div>
+                    {ev.detail && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>{ev.detail}</div>}
                   </div>
                 </div>
               ))}
@@ -137,7 +204,7 @@ export function RastreoPage({ navigate, params, toast }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <Card>
             <div className="section-title" style={{ marginBottom: 14 }}>Carga</div>
-            {[['Contenedores', shipment.containers], ['Peso', shipment.weight], ['Mercancía', shipment.cargo], ['Referencia', 'INV-2026-555']].map(([l, v]) => (
+            {[['Contenedores', shipment.containers || '—'], ['Peso', shipment.weight || '—'], ['Mercancía', shipment.cargo || '—'], ['Referencia', shipment.ref_id]].map(([l, v]) => (
               <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 13.5 }}>
                 <span style={{ color: 'var(--text-faint)' }}>{l}</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{v}</span>
@@ -152,17 +219,17 @@ export function RastreoPage({ navigate, params, toast }: Props) {
               <span className="mono tnum" style={{ fontWeight: 700, color: 'var(--text-strong)' }}>{fmtUSD(shipment.price)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Pagado (50%)</span>
+              <span style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Pagado</span>
               <span className="mono tnum" style={{ fontWeight: 600, color: 'var(--green-600)' }}>{fmtUSD(shipment.paid)}</span>
             </div>
             <div style={{ height: 6, background: 'var(--gray-100)', borderRadius: 999 }}>
-              <div style={{ height: 6, background: 'var(--green-500)', borderRadius: 999, width: `${(shipment.paid / shipment.price) * 100}%` }} />
+              <div style={{ height: 6, background: 'var(--green-500)', borderRadius: 999, width: `${shipment.price > 0 ? (shipment.paid / shipment.price) * 100 : 0}%` }} />
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 6 }}>
-              Restante: {fmtUSD(shipment.price - shipment.paid)} · al entregar
+              Restante: {fmtUSD(remaining)}
             </div>
-            {shipment.status === 'waiting' && (
-              <Button variant="success" icon="dollar" block style={{ marginTop: 14 }} onClick={() => navigate('pago', { id: shipment.id })}>
+            {(shipment.status === 'waiting' || remaining > 0) && (
+              <Button variant="success" icon="dollar" block style={{ marginTop: 14 }} onClick={() => navigate('pago', { id: shipment.ref_id })}>
                 Pagar ahora
               </Button>
             )}
@@ -185,7 +252,7 @@ export function RastreoPage({ navigate, params, toast }: Props) {
             ))}
           </Card>
 
-          <Button variant="secondary" icon="fileText" block onClick={() => navigate('detalle', { id: shipment.id })}>Ver detalles completos</Button>
+          <Button variant="secondary" icon="fileText" block onClick={() => navigate('detalle', { id: shipment.ref_id })}>Ver detalles completos</Button>
         </div>
       </div>
 
@@ -193,7 +260,7 @@ export function RastreoPage({ navigate, params, toast }: Props) {
       <Modal open={chatOpen} onClose={() => setChatOpen(false)} title="Chat con soporte" width={460}>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green-500)', display: 'inline-block' }} />
-          Agente: María García · Respuesta típica &lt; 2 min
+          Soporte FletApp · Respuesta típica &lt; 2 min
         </div>
         <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
           {chatMsgs.map((m, i) => (

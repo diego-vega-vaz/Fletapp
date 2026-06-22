@@ -198,3 +198,10 @@ begin
   return sid;
 end;
 $$;
+
+-- ── 9. ENDURECIMIENTO: restringir ejecución de funciones ─────
+-- El trigger handle_new_user NO debe ser llamable vía API
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+-- accept_quote solo para usuarios autenticados
+revoke execute on function public.accept_quote(uuid) from public, anon;
+grant  execute on function public.accept_quote(uuid) to authenticated;
