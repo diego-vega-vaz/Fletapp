@@ -9,6 +9,10 @@ export interface DbProfile {
   rfc: string | null
   phone: string | null
   plan?: string | null
+  regimen_fiscal?: string | null
+  uso_cfdi?: string | null
+  cp_fiscal?: string | null
+  domicilio_fiscal?: string | null
 }
 
 export interface DbQuote {

@@ -6,6 +6,7 @@ import { Card } from '../components/ui/Card'
 import { Icon } from '../components/ui/Icon'
 import { Spinner } from '../components/ui/Misc'
 import { getQuotes, acceptQuote } from '../lib/db'
+import { exportToCsv, csvDate } from '../lib/export'
 import type { DbQuote } from '../lib/db'
 import type { Route, NavParams } from '../types'
 
@@ -82,6 +83,21 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
     )
   }, [quotes, search])
 
+  function handleExport() {
+    exportToCsv('cotizaciones-fletapp', [
+      { header: 'ID', value: q => q.ref_id },
+      { header: 'Origen', value: q => q.origin },
+      { header: 'Destino', value: q => q.dest },
+      { header: 'Tipo de carga', value: q => q.cargo_type },
+      { header: 'Contenedores', value: q => q.containers },
+      { header: 'Peso', value: q => q.weight },
+      { header: 'Precio', value: q => q.price },
+      { header: 'Estado', value: q => q.status },
+      { header: 'Creada', value: q => csvDate(q.created_at) },
+      { header: 'Vence', value: q => csvDate(q.expires_at) },
+    ], filtered)
+  }
+
   const summaryCards = [
     {
       label: 'Pendientes',
@@ -117,9 +133,14 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
           <h1 className="page-title">Cotizaciones</h1>
           <p className="page-sub">Solicita y gestiona cotizaciones de flete terrestre</p>
         </div>
-        <Button variant="primary" icon="plus" onClick={() => navigate('cotizacion')}>
-          Nueva cotización
-        </Button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Button variant="secondary" icon="download" onClick={handleExport} disabled={loading || filtered.length === 0}>
+            Exportar
+          </Button>
+          <Button variant="primary" icon="plus" onClick={() => navigate('cotizacion')}>
+            Nueva cotización
+          </Button>
+        </div>
       </div>
 
       {/* Status summary cards */}

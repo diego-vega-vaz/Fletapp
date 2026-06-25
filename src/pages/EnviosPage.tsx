@@ -6,6 +6,7 @@ import { Input, Select } from '../components/ui/Input'
 import { Tabs } from '../components/ui/Tabs'
 import { Spinner } from '../components/ui/Misc'
 import { getShipments } from '../lib/db'
+import { exportToCsv, csvDate } from '../lib/export'
 import type { DbShipment } from '../lib/db'
 import type { Route, NavParams } from '../types'
 
@@ -70,6 +71,24 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
     return list
   }, [shipments, tab, search, statusFilter])
 
+  function handleExport() {
+    exportToCsv('envios-fletapp', [
+      { header: 'ID', value: s => s.ref_id },
+      { header: 'Origen', value: s => s.origin },
+      { header: 'Destino', value: s => s.dest },
+      { header: 'Estado', value: s => s.status },
+      { header: 'Carga', value: s => s.cargo },
+      { header: 'Contenedores', value: s => s.containers },
+      { header: 'Peso', value: s => s.weight },
+      { header: 'Precio', value: s => s.price },
+      { header: 'Pagado', value: s => s.paid },
+      { header: 'Transportista', value: s => s.carrier },
+      { header: 'Salida', value: s => csvDate(s.depart_at) },
+      { header: 'ETA', value: s => s.eta_short },
+      { header: 'Creado', value: s => csvDate(s.created_at) },
+    ], filtered)
+  }
+
   function getActions(s: DbShipment) {
     const actions: React.ReactNode[] = []
 
@@ -124,9 +143,14 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
           <h1 className="page-title">Envíos</h1>
           <p className="page-sub">Gestiona y rastrea todos tus envíos activos</p>
         </div>
-        <Button variant="primary" icon="plus" onClick={() => navigate('cotizacion')}>
-          Nuevo envío
-        </Button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Button variant="secondary" icon="download" onClick={handleExport} disabled={loading || filtered.length === 0}>
+            Exportar
+          </Button>
+          <Button variant="primary" icon="plus" onClick={() => navigate('cotizacion')}>
+            Nuevo envío
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

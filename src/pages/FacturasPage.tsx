@@ -6,6 +6,7 @@ import { Icon } from '../components/ui/Icon'
 import { Tabs } from '../components/ui/Tabs'
 import { Tooltip, Spinner } from '../components/ui/Misc'
 import { getInvoices, type DbInvoice } from '../lib/db'
+import { exportToCsv } from '../lib/export'
 import { fmtUSD } from '../data/mockData'
 import type { Route, NavParams } from '../types'
 
@@ -40,6 +41,20 @@ export function FacturasPage({ navigate, toast }: Props) {
   const paidTotal = invoices.filter(i => i.status === 'paid').reduce((a, b) => a + (b.amount ?? 0), 0)
   const pendingCount = invoices.filter(i => i.status === 'pending').length
 
+  function handleExport() {
+    exportToCsv('facturas-fletapp', [
+      { header: 'Factura', value: i => i.ref_id },
+      { header: 'UUID CFDI', value: i => i.uuid_cfdi },
+      { header: 'Concepto', value: i => i.concept },
+      { header: 'Monto', value: i => i.amount },
+      { header: 'Estado', value: i => i.status },
+      { header: 'Método', value: i => i.method },
+      { header: 'Emitida', value: i => i.issued_at },
+      { header: 'Vence', value: i => i.due_at },
+    ], invoices)
+    toast({ type: 'success', title: 'Facturas exportadas', msg: `${invoices.length} facturas en CSV (Excel)` })
+  }
+
   return (
     <div>
       <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
@@ -47,8 +62,8 @@ export function FacturasPage({ navigate, toast }: Props) {
           <h1 className="page-title">Pagos & Facturas</h1>
           <p className="page-sub">Administra tus facturas CFDI, pagos y métodos de cobro.</p>
         </div>
-        <Button variant="secondary" icon="download" onClick={() => toast({ type: 'success', title: 'Exportando facturas', msg: 'Se descargará un ZIP con XML + PDF' })}>
-          Descargar todo
+        <Button variant="secondary" icon="download" onClick={handleExport} disabled={loading || invoices.length === 0}>
+          Exportar a Excel
         </Button>
       </div>
 
@@ -163,13 +178,10 @@ export function FacturasPage({ navigate, toast }: Props) {
         <div className="grid-2" style={{ alignItems: 'start' }}>
           <Card>
             <div className="section-title" style={{ fontSize: 15, marginBottom: 14 }}>Tarjetas guardadas</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, border: '1px solid var(--border)', borderRadius: 12, marginBottom: 12 }}>
-              <span style={{ width: 44, height: 30, borderRadius: 6, background: 'linear-gradient(135deg,#003399,#0066CC)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontStyle: 'italic', fontWeight: 800, fontSize: 11 }}>VISA</span>
-              <div style={{ flex: 1 }}>
-                <div className="mono" style={{ fontWeight: 600, color: 'var(--text-strong)', fontSize: 14 }}>•••• 4242</div>
-                <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Exp 12/28</div>
-              </div>
-              <span className="badge badge-soft" style={{ '--bg': 'var(--blue-50)', '--fg': 'var(--primary)', fontSize: 11 } as React.CSSProperties}>Principal</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '24px 14px', border: '1px dashed var(--border)', borderRadius: 12, marginBottom: 12, textAlign: 'center' }}>
+              <Icon name="card" size={26} style={{ color: 'var(--border)' }} />
+              <div style={{ fontSize: 13.5, color: 'var(--text-muted)', fontWeight: 600 }}>No tienes tarjetas guardadas</div>
+              <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Agrega una para pagar tus facturas en línea</div>
             </div>
             <Button variant="secondary" icon="plus" block onClick={() => toast({ type: 'info', title: 'Próximamente', msg: 'Integración con pasarela de pago en desarrollo' })}>Agregar tarjeta</Button>
           </Card>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
-import { Field, Input, Toggle } from '../components/ui/Input'
+import { Field, Input, Toggle, Select } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
 import { Icon } from '../components/ui/Icon'
 import { Spinner } from '../components/ui/Misc'
+import { REGIMENES_FISCALES, USOS_CFDI } from '../data/sat'
 import { getProfile, updateProfile, type DbProfile } from '../lib/db'
 import { supabase } from '../lib/supabase'
 
@@ -132,6 +133,10 @@ function PerfilTab({ profile, email, onSaved }: { profile: DbProfile; email: str
 function EmpresaTab({ profile, onSaved }: { profile: DbProfile; onSaved: (p: Partial<DbProfile>) => void }) {
   const [company, setCompany] = useState(profile.company ?? '')
   const [rfc, setRfc] = useState(profile.rfc ?? '')
+  const [regimen, setRegimen] = useState(profile.regimen_fiscal ?? '')
+  const [usoCfdi, setUsoCfdi] = useState(profile.uso_cfdi ?? '')
+  const [cp, setCp] = useState(profile.cp_fiscal ?? '')
+  const [domicilio, setDomicilio] = useState(profile.domicilio_fiscal ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -139,7 +144,14 @@ function EmpresaTab({ profile, onSaved }: { profile: DbProfile; onSaved: (p: Par
   async function save() {
     setSaving(true); setError('')
     try {
-      const updates = { company: company.trim(), rfc: rfc.trim() }
+      const updates = {
+        company: company.trim(),
+        rfc: rfc.trim().toUpperCase(),
+        regimen_fiscal: regimen || null,
+        uso_cfdi: usoCfdi || null,
+        cp_fiscal: cp.trim() || null,
+        domicilio_fiscal: domicilio.trim() || null,
+      }
       await updateProfile(updates)
       onSaved(updates)
       setSaved(true); setTimeout(() => setSaved(false), 2000)
@@ -150,22 +162,49 @@ function EmpresaTab({ profile, onSaved }: { profile: DbProfile; onSaved: (p: Par
     }
   }
 
+  const complete = company && rfc && regimen && usoCfdi && cp
+
   return (
     <div>
-      <SectionHead title="Datos de la empresa" sub="Esta información aparecerá en tus facturas CFDI" />
+      <SectionHead title="Datos fiscales" sub="Esta información se usa para emitir tus facturas CFDI 4.0" />
+
+      {!complete && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--orange-50)', borderRadius: 10, fontSize: 13, color: 'var(--orange-600)', marginBottom: 20 }}>
+          <Icon name="alertCircle" size={16} />
+          Completa tus datos fiscales para poder generar facturas CFDI válidas.
+        </div>
+      )}
 
       <div className="grid-2" style={{ gap: 18, marginBottom: 18 }}>
         <Field label="Razón social" required>
-          <Input iconLeft="building2" value={company} onChange={e => setCompany(e.target.value)} placeholder="Nombre legal de la empresa" />
+          <Input iconLeft="building2" value={company} onChange={e => setCompany(e.target.value)} placeholder="Nombre o razón social legal" />
         </Field>
         <Field label="RFC" required>
-          <Input iconLeft="fileText" value={rfc} onChange={e => setRfc(e.target.value)} placeholder="RFC de la empresa" />
+          <Input iconLeft="fileText" value={rfc} onChange={e => setRfc(e.target.value.toUpperCase())} placeholder="XAXX010101000" maxLength={13} />
+        </Field>
+        <Field label="Régimen fiscal" required>
+          <Select value={regimen} onChange={e => setRegimen(e.target.value)}>
+            <option value="">Selecciona tu régimen…</option>
+            {REGIMENES_FISCALES.map(r => <option key={r.code} value={r.code}>{r.label}</option>)}
+          </Select>
+        </Field>
+        <Field label="Uso de CFDI" required>
+          <Select value={usoCfdi} onChange={e => setUsoCfdi(e.target.value)}>
+            <option value="">Selecciona el uso…</option>
+            {USOS_CFDI.map(u => <option key={u.code} value={u.code}>{u.label}</option>)}
+          </Select>
+        </Field>
+        <Field label="Código postal (domicilio fiscal)" required>
+          <Input iconLeft="mapPin" value={cp} onChange={e => setCp(e.target.value.replace(/\D/g, ''))} placeholder="06600" maxLength={5} />
+        </Field>
+        <Field label="Domicilio fiscal">
+          <Input iconLeft="building2" value={domicilio} onChange={e => setDomicilio(e.target.value)} placeholder="Calle, número, colonia, ciudad" />
         </Field>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'var(--blue-50)', borderRadius: 10, fontSize: 13, color: 'var(--primary)' }}>
         <Icon name="info" size={16} />
-        Tu domicilio fiscal y logo se solicitarán al generar tu primera factura CFDI.
+        Verifica que tus datos coincidan con tu Constancia de Situación Fiscal del SAT.
       </div>
 
       {error && <p style={{ color: 'var(--red-500)', fontSize: 13, marginTop: 12 }}>{error}</p>}
