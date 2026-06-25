@@ -234,6 +234,63 @@ export const sendTicketMessage = async (ticketId: string, body: string, authorNa
   return data
 }
 
+// ── Documentos (Supabase Storage) ─────────────────────────────
+
+const DOCS_BUCKET = 'shipment-docs'
+
+export interface DbDocument {
+  name: string
+  path: string
+  size: number
+  created_at: string
+}
+
+const currentUserId = async (): Promise<string> => {
+  const { data } = await supabase.auth.getUser()
+  return data.user?.id ?? ''
+}
+
+export const listDocuments = async (shipmentRef: string): Promise<DbDocument[]> => {
+  const uid = await currentUserId()
+  if (!uid) return []
+  const prefix = `${uid}/${shipmentRef}`
+  const { data, error } = await supabase.storage.from(DOCS_BUCKET).list(prefix, {
+    sortBy: { column: 'created_at', order: 'desc' },
+  })
+  if (error) throw error
+  return (data || [])
+    .filter(f => f.id) // ignora carpetas
+    .map(f => ({
+      name: f.name,
+      path: `${prefix}/${f.name}`,
+      size: (f.metadata as { size?: number } | null)?.size ?? 0,
+      created_at: f.created_at ?? new Date().toISOString(),
+    }))
+}
+
+export const uploadDocument = async (shipmentRef: string, file: File): Promise<void> => {
+  const uid = await currentUserId()
+  if (!uid) throw new Error('No autenticado')
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `${uid}/${shipmentRef}/${Date.now()}-${safeName}`
+  const { error } = await supabase.storage.from(DOCS_BUCKET).upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  })
+  if (error) throw error
+}
+
+export const getDocumentUrl = async (path: string): Promise<string> => {
+  const { data, error } = await supabase.storage.from(DOCS_BUCKET).createSignedUrl(path, 60 * 5)
+  if (error) throw error
+  return data.signedUrl
+}
+
+export const deleteDocument = async (path: string): Promise<void> => {
+  const { error } = await supabase.storage.from(DOCS_BUCKET).remove([path])
+  if (error) throw error
+}
+
 // ── Stats helpers ─────────────────────────────────────────────
 
 export const getDashboardStats = async () => {

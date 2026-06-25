@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
 import { StatusBadge } from '../components/ui/Badge'
 import { StaticRouteMap } from '../components/shared/MexicoMap'
+import { DocumentsManager } from '../components/shared/DocumentsManager'
 import { Spinner } from '../components/ui/Misc'
 import { getShipment, type DbShipment } from '../lib/db'
 import { fmtUSD } from '../data/mockData'
@@ -46,14 +47,6 @@ export function DetalleEnvioPage({ navigate, params, toast }: Props) {
   const carrier = shipment.carrier || 'Por asignar'
   const driver = shipment.driver || 'Por asignar'
   const plate = shipment.plate && shipment.plate !== '—' ? shipment.plate : 'Por asignar'
-
-  // Documentos disponibles según el estado real del envío
-  const docs = [
-    { name: 'Carta de porte', ext: 'PDF', date: shipment.depart_at || '—', status: 'Disponible' },
-    { name: 'Factura CFDI 4.0', ext: 'XML', date: shipment.depart_at || '—', status: 'Disponible' },
-    { name: 'Factura CFDI 4.0', ext: 'PDF', date: shipment.depart_at || '—', status: 'Disponible' },
-    { name: 'Comprobante de entrega', ext: 'PDF', date: shipment.status === 'delivered' ? (shipment.eta || '—') : 'Pendiente', status: shipment.status === 'delivered' ? 'Disponible' : 'Pendiente' },
-  ]
 
   return (
     <div>
@@ -129,32 +122,10 @@ export function DetalleEnvioPage({ navigate, params, toast }: Props) {
             </div>
           </Card>
 
-          {/* Documents */}
+          {/* Documents — subida real a Supabase Storage */}
           <Card>
             <div className="section-title" style={{ marginBottom: 14 }}>Documentos</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {docs.map((d, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: i < docs.length - 1 ? '1px solid var(--border-soft)' : 'none' }}>
-                  <span style={{
-                    width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                    background: d.status === 'Pendiente' ? 'var(--gray-100)' : d.ext === 'XML' ? 'var(--green-50)' : 'var(--red-50)',
-                    color: d.status === 'Pendiente' ? 'var(--text-faint)' : d.ext === 'XML' ? 'var(--green-600)' : 'var(--red-500)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 800, letterSpacing: 0.5,
-                  }}>
-                    {d.ext}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: d.status === 'Pendiente' ? 'var(--text-muted)' : 'var(--text-strong)' }}>{d.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>{d.date}</div>
-                  </div>
-                  {d.status === 'Disponible'
-                    ? <Button size="sm" variant="ghost" icon="download" onClick={() => toast({ type: 'success', title: `${d.name}.${d.ext.toLowerCase()} descargado` })}>Descargar</Button>
-                    : <span style={{ fontSize: 12.5, color: 'var(--text-faint)', fontStyle: 'italic' }}>Pendiente</span>
-                  }
-                </div>
-              ))}
-            </div>
+            <DocumentsManager shipmentRef={shipment.ref_id} toast={toast} />
           </Card>
         </div>
 
