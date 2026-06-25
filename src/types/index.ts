@@ -81,7 +81,9 @@ export interface Ticket {
 export type Route =
   | 'dashboard' | 'cotizacion' | 'rastreo' | 'detalle'
   | 'pago' | 'pagos' | 'cotizaciones' | 'envios'
-  | 'soporte' | 'ticket' | 'config'
+  | 'soporte' | 'ticket' | 'config' | 'planes'
+
+export type PublicRoute = 'landing' | 'login' | 'register' | 'planes' | 'terminos' | 'privacidad'
 
 export interface NavParams {
   id?: string

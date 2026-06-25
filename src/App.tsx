@@ -1,8 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import { AppShell } from './components/layout/AppShell'
+import { PublicShell } from './components/layout/PublicShell'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { LandingPage } from './pages/LandingPage'
+import { PlanesPage } from './pages/PlanesPage'
+import { TerminosPage } from './pages/TerminosPage'
+import { PrivacidadPage } from './pages/PrivacidadPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CotizacionPage } from './pages/CotizacionPage'
 import { CotizacionesPage } from './pages/CotizacionesPage'
@@ -14,17 +19,20 @@ import { FacturasPage } from './pages/FacturasPage'
 import { SoportePage } from './pages/SoportePage'
 import { TicketDetailPage } from './pages/TicketDetailPage'
 import { ConfigPage } from './pages/ConfigPage'
-import type { Route, NavParams, User } from './types'
+import { getProfile } from './lib/db'
+import type { Plan } from './data/plans'
+import type { Route, NavParams, User, PublicRoute } from './types'
 
 interface Toast { id: number; type: string; title: string; msg?: string }
 
 export default function App() {
   const [authed, setAuthed] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
-  const [showRegister, setShowRegister] = useState(false)
+  const [publicRoute, setPublicRoute] = useState<PublicRoute>('landing')
   const [route, setRoute] = useState<Route>('dashboard')
   const [params, setParams] = useState<NavParams | null>(null)
   const [user, setUser] = useState<User>({ name: '', company: '', email: '' })
+  const [plan, setPlan] = useState<string | null>('free')
   const [toasts, setToasts] = useState<Toast[]>([])
 
   useEffect(() => {
@@ -60,6 +68,12 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Carga el plan del usuario al autenticarse
+  useEffect(() => {
+    if (!authed) return
+    getProfile().then(p => { if (p?.plan) setPlan(p.plan) }).catch(() => {})
+  }, [authed])
+
   const navigate = useCallback((r: Route, p: NavParams | null = null) => {
     setRoute(r)
     setParams(p)
@@ -87,8 +101,24 @@ export default function App() {
   }
 
   if (!authed) {
-    if (showRegister) return <RegisterPage onBack={() => setShowRegister(false)} />
-    return <LoginPage onLogin={() => setAuthed(true)} onRegister={() => setShowRegister(true)} />
+    const go = (r: PublicRoute) => { setPublicRoute(r); window.scrollTo({ top: 0 }) }
+    if (publicRoute === 'login') return <LoginPage onLogin={() => setAuthed(true)} onRegister={() => go('register')} />
+    if (publicRoute === 'register') return <RegisterPage onBack={() => go('login')} />
+    return (
+      <PublicShell go={go} active={publicRoute}>
+        {publicRoute === 'landing' && <LandingPage go={go} />}
+        {publicRoute === 'planes' && <PlanesPage onSelect={() => go('register')} />}
+        {publicRoute === 'terminos' && <TerminosPage go={go} />}
+        {publicRoute === 'privacidad' && <PrivacidadPage go={go} />}
+      </PublicShell>
+    )
+  }
+
+  const onSelectPlan = (p: Plan) => {
+    if (p.id === plan) return
+    if (p.id === 'free') { toast({ type: 'info', title: 'Ya tienes acceso al plan Gratis' }); return }
+    window.location.href = `mailto:ventas@fletapp.mx?subject=${encodeURIComponent(`Quiero mejorar a ${p.name}`)}&body=${encodeURIComponent(`Hola, me interesa el plan ${p.name} para mi cuenta ${user.email}.`)}`
+    toast({ type: 'info', title: 'Pagos en línea — muy pronto', msg: `Te conectamos con ventas para activar ${p.name}.` })
   }
 
   const page = (() => {
@@ -103,6 +133,7 @@ export default function App() {
       case 'pagos':        return <FacturasPage navigate={navigate} toast={toast} />
       case 'soporte':      return <SoportePage navigate={navigate} toast={toast} />
       case 'ticket':       return <TicketDetailPage navigate={navigate} toast={toast} params={params} />
+      case 'planes':       return <PlanesPage currentPlan={plan} onSelect={onSelectPlan} inApp />
       case 'config':       return <ConfigPage user={user} />
       default:             return <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
     }

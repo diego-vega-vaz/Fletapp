@@ -8,6 +8,7 @@ export interface DbProfile {
   company: string | null
   rfc: string | null
   phone: string | null
+  plan?: string | null
 }
 
 export interface DbQuote {

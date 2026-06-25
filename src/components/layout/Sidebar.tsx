@@ -15,10 +15,11 @@ interface NavItem {
 const NAV: NavItem[] = [
   { section: 'Principal' },
   { id: 'dashboard',    label: 'Dashboard',       icon: 'home' },
-  { id: 'cotizaciones', label: 'Cotizaciones',     icon: 'fileText', badge: 2 },
+  { id: 'cotizaciones', label: 'Cotizaciones',     icon: 'fileText' },
   { id: 'envios',       label: 'Envíos',           icon: 'package' },
-  { id: 'pagos',        label: 'Pagos & Facturas', icon: 'card', badge: 1 },
-  { section: 'Soporte' },
+  { id: 'pagos',        label: 'Pagos & Facturas', icon: 'card' },
+  { section: 'Cuenta' },
+  { id: 'planes',   label: 'Planes',        icon: 'zap' },
   { id: 'soporte',  label: 'Soporte',       icon: 'chat' },
   { id: 'config',   label: 'Configuración', icon: 'settings' },
 ]
