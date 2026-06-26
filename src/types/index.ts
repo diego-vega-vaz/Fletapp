@@ -81,7 +81,7 @@ export interface Ticket {
 export type Route =
   | 'dashboard' | 'cotizacion' | 'rastreo' | 'detalle'
   | 'pago' | 'pagos' | 'cotizaciones' | 'envios'
-  | 'soporte' | 'ticket' | 'config' | 'planes'
+  | 'soporte' | 'ticket' | 'config' | 'planes' | 'reportes'
 
 export type PublicRoute = 'landing' | 'login' | 'register' | 'planes' | 'terminos' | 'privacidad'
 

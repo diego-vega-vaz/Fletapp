@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { id: 'cotizaciones', label: 'Cotizaciones',     icon: 'fileText' },
   { id: 'envios',       label: 'Envíos',           icon: 'package' },
   { id: 'pagos',        label: 'Pagos & Facturas', icon: 'card' },
+  { id: 'reportes',     label: 'Reportes',         icon: 'trendingUp' },
   { section: 'Cuenta' },
   { id: 'planes',   label: 'Planes',        icon: 'zap' },
   { id: 'soporte',  label: 'Soporte',       icon: 'chat' },

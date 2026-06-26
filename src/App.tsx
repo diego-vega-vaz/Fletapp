@@ -19,6 +19,7 @@ import { FacturasPage } from './pages/FacturasPage'
 import { SoportePage } from './pages/SoportePage'
 import { TicketDetailPage } from './pages/TicketDetailPage'
 import { ConfigPage } from './pages/ConfigPage'
+import { ReportesPage } from './pages/ReportesPage'
 import { getProfile } from './lib/db'
 import type { Plan } from './data/plans'
 import type { Route, NavParams, User, PublicRoute } from './types'
@@ -135,6 +136,7 @@ export default function App() {
       case 'ticket':       return <TicketDetailPage navigate={navigate} toast={toast} params={params} />
       case 'planes':       return <PlanesPage currentPlan={plan} onSelect={onSelectPlan} inApp />
       case 'config':       return <ConfigPage user={user} />
+      case 'reportes':     return <ReportesPage />
       default:             return <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
     }
   })()
