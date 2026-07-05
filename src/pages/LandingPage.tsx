@@ -42,7 +42,7 @@ export function LandingPage({ go }: Props) {
         <div style={{ position: 'absolute', bottom: -160, left: -100, width: 520, height: 520, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ maxWidth: 1080, margin: '0 auto', padding: '80px 28px 90px', position: 'relative', zIndex: 1, textAlign: 'center' }}>
           <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.15)', borderRadius: 999, padding: '6px 14px', fontSize: 13, fontWeight: 600, marginBottom: 22, backdropFilter: 'blur(4px)' }}>
-            🚚 Logística terrestre para México
+            Logística terrestre para México
           </span>
           <h1 style={{ fontSize: 46, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', maxWidth: 720, margin: '0 auto 20px' }}>
             Mueve tu carga por México sin complicaciones
