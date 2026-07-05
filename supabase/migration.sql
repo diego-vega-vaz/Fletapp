@@ -98,7 +98,7 @@ create table if not exists tickets (
   status        text default 'open',   -- open | in_progress | resolved | closed
   shipment_ref  text,
   description   text,
-  agent_name    text default 'Soporte FletApp',
+  agent_name    text default 'Soporte FleetApp',
   created_at    timestamptz default now()
 );
 
@@ -143,11 +143,12 @@ create policy "own ticket messages" on ticket_messages for all using (
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
-  insert into public.profiles (id, full_name, company)
+  insert into public.profiles (id, full_name, company, phone)
   values (
     new.id,
     new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'company'
+    new.raw_user_meta_data->>'company',
+    new.raw_user_meta_data->>'phone'
   );
   return new;
 end;

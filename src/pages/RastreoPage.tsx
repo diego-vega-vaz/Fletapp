@@ -65,7 +65,7 @@ export function RastreoPage({ navigate, params, toast }: Props) {
   const [chatOpen, setChatOpen] = useState(false)
   const [msg, setMsg] = useState('')
   const [chatMsgs, setChatMsgs] = useState([
-    { from: 'agent', text: '¡Hola! Soy el asistente de FletApp. ¿En qué puedo ayudarte con tu envío?' },
+    { from: 'agent', text: '¡Hola! Soy el asistente de FleetApp. ¿En qué puedo ayudarte con tu envío?' },
   ])
   const [notifs, setNotifs] = useState({ near: true, arrived: true, changes: true })
 
@@ -260,7 +260,7 @@ export function RastreoPage({ navigate, params, toast }: Props) {
       <Modal open={chatOpen} onClose={() => setChatOpen(false)} title="Chat con soporte" width={460}>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green-500)', display: 'inline-block' }} />
-          Soporte FletApp · Respuesta típica &lt; 2 min
+          Soporte FleetApp · Respuesta típica &lt; 2 min
         </div>
         <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
           {chatMsgs.map((m, i) => (

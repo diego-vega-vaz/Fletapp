@@ -44,7 +44,7 @@ export const INVOICES: Invoice[] = [
   { id: 'A-2026-0511', uuid: 'B1D7E4F2-3C9A-4E55-8F21-7A0B3C4D5E6F', shipment: 'RES-2026-00143', concept: 'Flete CDMX → Guadalajara (50%)', date: '5 jun 2026', due: '7 jun 2026', amount: 3309, status: 'pending', method: '—' },
   { id: 'A-2026-0508', uuid: 'C2E8F5A3-4D0B-4F66-9A32-8B1C4D5E6F70', shipment: 'RES-2026-00142', concept: 'Flete QRO → Tijuana (anticipo)', date: '6 jun 2026', due: '8 jun 2026', amount: 4725, status: 'pending', method: '—' },
   { id: 'A-2026-0503', uuid: 'D3F9A6B4-5E1C-4077-AB43-9C2D5E6F7081', shipment: 'RES-2026-00141', concept: 'Flete CDMX → Mérida', date: '3 jun 2026', due: '3 jun 2026', amount: 9048, status: 'paid', method: 'Transferencia SPEI' },
-  { id: 'A-2026-0497', uuid: 'E4A0B7C5-6F2D-4188-BC54-0D3E6F708192', shipment: 'RES-2026-00138', concept: 'Flete CDMX → Puebla', date: '28 may 2026', due: '28 may 2026', amount: 2436, status: 'paid', method: 'Crédito FletApp' },
+  { id: 'A-2026-0497', uuid: 'E4A0B7C5-6F2D-4188-BC54-0D3E6F708192', shipment: 'RES-2026-00138', concept: 'Flete CDMX → Puebla', date: '28 may 2026', due: '28 may 2026', amount: 2436, status: 'paid', method: 'Crédito FleetApp' },
 ]
 
 export const TICKET: Ticket = {

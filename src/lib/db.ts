@@ -126,7 +126,7 @@ export const getQuotes = async (): Promise<DbQuote[]> => {
 export const createQuote = async (q: {
   origin: string; origin_code: string; dest: string; dest_code: string
   cargo_type: string; containers: string; weight: string; cargo_desc: string
-  special: object; customs: string; operation: string; incoterm: string; price: number
+  special: object; customs: string; operation: string; price: number
 }): Promise<DbQuote> => {
   const { data, error } = await supabase
     .from('quotes').insert(q).select().single()
@@ -217,7 +217,7 @@ export const createTicket = async (t: {
   await supabase.from('ticket_messages').insert({
     ticket_id: data.id,
     is_user: false,
-    author_name: 'Soporte FletApp',
+    author_name: 'Soporte FleetApp',
     body: `Hola, hemos recibido tu ticket sobre "${t.subject}". Un agente te responderá pronto.`,
   })
   return data

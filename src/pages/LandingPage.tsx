@@ -22,11 +22,22 @@ const STEPS = [
   { n: '3', title: 'Rastrea y recibe', desc: 'Sigue tu carga en vivo y paga el saldo al confirmar la entrega.' },
 ]
 
+// Foto del hero — camión de carga en carretera (logística terrestre).
+// Para cambiarla, reemplaza esta URL por la de tu propia foto.
+const HERO_IMG =
+  'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=2070&q=70'
+
 export function LandingPage({ go }: Props) {
   return (
     <div>
       {/* Hero */}
-      <section style={{ background: 'linear-gradient(160deg, var(--blue-700) 0%, var(--blue-500) 60%, var(--blue-400) 100%)', color: '#fff', overflow: 'hidden', position: 'relative' }}>
+      <section style={{
+        backgroundColor: 'var(--blue-700)',
+        backgroundImage: `linear-gradient(160deg, rgba(11,31,74,0.86) 0%, rgba(20,49,110,0.72) 55%, rgba(37,84,164,0.60) 100%), url(${HERO_IMG})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        color: '#fff', overflow: 'hidden', position: 'relative',
+      }}>
         <div style={{ position: 'absolute', top: -100, right: -80, width: 460, height: 460, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
         <div style={{ position: 'absolute', bottom: -160, left: -100, width: 520, height: 520, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ maxWidth: 1080, margin: '0 auto', padding: '80px 28px 90px', position: 'relative', zIndex: 1, textAlign: 'center' }}>

@@ -249,7 +249,7 @@ export function LoginPage({ onLogin, onRegister }: LoginPageProps) {
             ))}
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-            © {new Date().getFullYear()} FletApp. Todos los derechos reservados.
+            © {new Date().getFullYear()} FleetApp. Todos los derechos reservados.
           </p>
         </div>
       </div>

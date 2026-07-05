@@ -73,7 +73,7 @@ export function PrivacidadPage({ go }: Props) {
 
       <h2 style={h2}>1. Identidad y domicilio del responsable</h2>
       <p style={p}>
-        FletApp ("el Responsable"), con domicilio en la Ciudad de México, México, es responsable
+        FleetApp ("el Responsable"), con domicilio en la Ciudad de México, México, es responsable
         del tratamiento, uso y protección de los datos personales que usted nos proporcione a
         través de nuestra plataforma de logística de flete terrestre.
       </p>
@@ -108,7 +108,7 @@ export function PrivacidadPage({ go }: Props) {
       </ul>
       <p style={p}>
         Si usted no desea que sus datos sean tratados para las finalidades secundarias, puede
-        manifestarlo enviando un correo a privacidad@fletapp.mx. La negativa para estas finalidades
+        manifestarlo enviando un correo a privacidad@fleetapp.mx. La negativa para estas finalidades
         no será motivo para negarle los servicios contratados.
       </p>
 
@@ -142,14 +142,14 @@ export function PrivacidadPage({ go }: Props) {
       </p>
       <p style={p}>
         Para ejercer cualquiera de los derechos ARCO, deberá enviar su solicitud al correo
-        electrónico privacidad@fletapp.mx, indicando su nombre, los datos sobre los que desea
+        electrónico privacidad@fleetapp.mx, indicando su nombre, los datos sobre los que desea
         ejercer alguno de los derechos y la descripción clara y precisa de su solicitud. Daremos
         respuesta en los plazos establecidos por la ley.
       </p>
 
       <h2 style={h2}>7. Seguridad de la información</h2>
       <p style={p}>
-        FletApp implementa medidas de seguridad administrativas, técnicas y físicas razonables para
+        FleetApp implementa medidas de seguridad administrativas, técnicas y físicas razonables para
         proteger sus datos personales contra daño, pérdida, alteración, destrucción o uso, acceso o
         tratamiento no autorizados. No obstante, ningún sistema es completamente infalible, por lo
         que no podemos garantizar una seguridad absoluta.
@@ -165,7 +165,7 @@ export function PrivacidadPage({ go }: Props) {
       <h2 style={h2}>9. Contacto</h2>
       <p style={p}>
         Si tiene preguntas o comentarios sobre este Aviso de Privacidad o sobre el tratamiento de
-        sus datos personales, puede contactarnos en el correo electrónico privacidad@fletapp.mx.
+        sus datos personales, puede contactarnos en el correo electrónico privacidad@fleetapp.mx.
       </p>
     </div>
   )

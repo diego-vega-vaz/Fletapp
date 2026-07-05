@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Logo } from '../components/ui/Logo'
 import { Button } from '../components/ui/Button'
-import { Field } from '../components/ui/Input'
+import { Field, Input } from '../components/ui/Input'
 import { Icon } from '../components/ui/Icon'
 import { supabase } from '../lib/supabase'
 
@@ -13,7 +13,9 @@ export function RegisterPage({ onBack }: Props) {
   const [name, setName] = useState('')
   const [company, setCompany] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -28,7 +30,10 @@ export function RegisterPage({ onBack }: Props) {
     const { error: err } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name, company } },
+      options: {
+        data: { full_name: name, company, phone: phone.trim() },
+        emailRedirectTo: window.location.origin,
+      },
     })
     setLoading(false)
 
@@ -45,7 +50,7 @@ export function RegisterPage({ onBack }: Props) {
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 750, color: 'var(--text-strong)', marginBottom: 10 }}>¡Cuenta creada!</h2>
           <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 28 }}>
-            Te enviamos un correo de confirmación a <strong>{email}</strong>. Confírmalo y luego inicia sesión.
+            Te enviamos un correo de confirmación a <strong>{email}</strong>. Haz clic en el enlace del correo y te llevaremos de vuelta a FleetApp para iniciar sesión.
           </p>
           <Button variant="primary" block onClick={onBack}>Ir a iniciar sesión</Button>
         </div>
@@ -60,7 +65,7 @@ export function RegisterPage({ onBack }: Props) {
         <Logo size={26} light />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 16, maxWidth: 380 }}>
-            Únete a miles de empresas que ya usan FletApp
+            Únete a miles de empresas que ya usan FleetApp
           </h1>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}>
             Cotiza, rastrea y paga tus envíos terrestres en un solo lugar.
@@ -95,8 +100,19 @@ export function RegisterPage({ onBack }: Props) {
             <Field label="Correo electrónico" required>
               <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="diego@empresa.mx" />
             </Field>
+            <Field label="Número de celular">
+              <Input iconLeft="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+52 55 0000 0000" />
+            </Field>
             <Field label="Contraseña" required>
-              <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+              <Input
+                type={showPass ? 'text' : 'password'}
+                iconLeft="lock"
+                iconRight={showPass ? 'eyeOff' : 'eye'}
+                onIconRight={() => setShowPass(v => !v)}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+              />
             </Field>
             <Button variant="primary" block loading={loading} style={{ marginTop: 4, fontSize: 15 }}>
               Crear cuenta

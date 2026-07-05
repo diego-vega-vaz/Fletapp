@@ -55,11 +55,11 @@ export function PublicShell({ go, active, children }: Props) {
             <button onClick={() => go('planes')} style={{ fontSize: 13, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Planes</button>
             <button onClick={() => go('terminos')} style={{ fontSize: 13, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Términos</button>
             <button onClick={() => go('privacidad')} style={{ fontSize: 13, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Privacidad</button>
-            <a href="mailto:hola@fletapp.mx" style={{ fontSize: 13, color: 'var(--text-muted)' }}>Contacto</a>
+            <a href="mailto:hola@fleetapp.mx" style={{ fontSize: 13, color: 'var(--text-muted)' }}>Contacto</a>
           </div>
         </div>
         <div style={{ maxWidth: 1080, margin: '20px auto 0', fontSize: 12, color: 'var(--text-faint)', borderTop: '1px solid var(--border-soft)', paddingTop: 16 }}>
-          © {new Date().getFullYear()} FletApp. Todos los derechos reservados.
+          © {new Date().getFullYear()} FleetApp. Todos los derechos reservados.
         </div>
       </footer>
     </div>

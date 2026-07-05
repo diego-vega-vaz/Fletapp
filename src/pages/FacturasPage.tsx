@@ -42,7 +42,7 @@ export function FacturasPage({ navigate, toast }: Props) {
   const pendingCount = invoices.filter(i => i.status === 'pending').length
 
   function handleExport() {
-    exportToCsv('facturas-fletapp', [
+    exportToCsv('facturas-fleetapp', [
       { header: 'Factura', value: i => i.ref_id },
       { header: 'UUID CFDI', value: i => i.uuid_cfdi },
       { header: 'Concepto', value: i => i.concept },
@@ -188,7 +188,7 @@ export function FacturasPage({ navigate, toast }: Props) {
           <Card>
             <div className="section-title" style={{ fontSize: 15, marginBottom: 14 }}>Otros métodos</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[['Transferencia SPEI', 'CLABE: 002154007000000001', 'building'], ['Crédito FletApp', 'Contacta a tu ejecutivo para activar', 'zap']].map(([l, sub, ic]) => (
+              {[['Transferencia SPEI', 'CLABE: 002154007000000001', 'building'], ['Crédito FleetApp', 'Contacta a tu ejecutivo para activar', 'zap']].map(([l, sub, ic]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, border: '1px solid var(--border-soft)', borderRadius: 10 }}>
                   <Icon name={ic} size={20} style={{ color: 'var(--text-faint)' }} />
                   <div>

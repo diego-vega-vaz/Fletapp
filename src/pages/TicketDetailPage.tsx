@@ -236,7 +236,7 @@ export function TicketDetailPage({ navigate, toast, params }: Props) {
               <Avatar name={ticket.agent_name} size={42} />
               <div>
                 <div style={{ fontWeight: 650, fontSize: 14.5, color: 'var(--text-strong)' }}>{ticket.agent_name}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 2 }}>Especialista en Soporte · FletApp</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 2 }}>Especialista en Soporte · FleetApp</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green-500)', display: 'inline-block' }} />
                   <span style={{ fontSize: 12, color: 'var(--green-600)', fontWeight: 600 }}>En línea</span>

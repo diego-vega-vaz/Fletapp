@@ -6,6 +6,7 @@ import { Field, Input, Select, Checkbox, Textarea } from '../components/ui/Input
 import { Steps } from '../components/ui/Steps'
 import { StaticRouteMap } from '../components/shared/MexicoMap'
 import { fmtUSD } from '../data/mockData'
+import { PLANS, planById, fmtMXN } from '../data/plans'
 import { createQuote } from '../lib/db'
 import type { Route, NavParams } from '../types'
 
@@ -17,10 +18,16 @@ const CITY_CODE: Record<string, string> = {
 
 const CITIES = ['Ciudad de México', 'Monterrey', 'Guadalajara', 'Querétaro', 'Veracruz', 'Tijuana', 'Mérida', 'Puebla', 'León', 'Hermosillo', 'Cancún']
 
+const CARGO_LABELS: Record<string, string> = {
+  full: 'Contenedor general (bases full)',
+  sencillo: 'Contenedor general (sencillo)',
+  oog: 'Carga OOG (low boy)',
+}
+
 interface FormData {
-  origin: string; dest: string; cargoType: string; containers: number
+  origin: string; dest: string; service: string; cargoType: string; containers: number
   weight: string; description: string; special: Record<string, boolean>
-  customs: string; operation: string; incoterm: string
+  customs: string; operation: string
   docs: { invoice: boolean; packing: boolean; bol: boolean; certs: boolean }
   terms: boolean
 }
@@ -40,6 +47,35 @@ function Step1({ data, set, errors }: { data: FormData; set: (k: keyof FormData,
     <Card>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 20 }}>Detalles del envío</h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <Field label="¿Qué tipo de servicio deseas?" required>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+            {PLANS.map(p => {
+              const active = data.service === p.id
+              const priceLabel = p.priceMXN === null ? 'A tu medida' : p.priceMXN === 0 ? 'Gratis' : `${fmtMXN(p.priceMXN)}/mes`
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => set('service', p.id)}
+                  style={{
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10,
+                    border: `1.5px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+                    background: active ? 'var(--primary-soft)' : '#fff', transition: 'all var(--dur-quick)',
+                  }}
+                >
+                  <span style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${active ? 'var(--primary)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {active && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)' }} />}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--text-strong)' }}>{p.name}</div>
+                    <div style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>{p.tagline}</div>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: active ? 'var(--primary)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>{priceLabel}</span>
+                </div>
+              )
+            })}
+          </div>
+        </Field>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Field label="Ciudad de Origen" required>
             <Select value={data.origin} onChange={e => set('origin', e.target.value)}>
@@ -55,7 +91,7 @@ function Step1({ data, set, errors }: { data: FormData; set: (k: keyof FormData,
 
         <Field label="Tipo de Carga" required>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-            {[['container', 'Contenedor (1x20ft, 1x40ft, 2x20ft)'], ['oog', 'Carga General OOG'], ['mixto', 'Mixto']].map(([v, l]) => (
+            {[['full', 'Contenedor general (bases full)'], ['sencillo', 'Contenedor general (sencillo)'], ['oog', 'Carga OOG (low boy)']].map(([v, l]) => (
               <Checkbox key={v} radio checked={data.cargoType === v} onChange={() => set('cargoType', v)} label={l} />
             ))}
           </div>
@@ -121,12 +157,7 @@ function Step3({ data, set, errors }: { data: FormData; set: (k: keyof FormData,
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 20 }}>
           <Field label="Tipo de Operación" required>
             <Select value={data.operation} onChange={e => set('operation', e.target.value)}>
-              {['Importación', 'Exportación', 'Intra-tránsito', 'Maquiladora'].map(o => <option key={o}>{o}</option>)}
-            </Select>
-          </Field>
-          <Field label="Incoterm" required>
-            <Select value={data.incoterm} onChange={e => set('incoterm', e.target.value)}>
-              {['DDP', 'DAP', 'FOB', 'CIF', 'EXW'].map(o => <option key={o}>{o}</option>)}
+              {['Importación', 'Exportación', 'Locales'].map(o => <option key={o}>{o}</option>)}
             </Select>
           </Field>
           <Field label="Documentos a Cargar" error={errors.docs}>
@@ -152,7 +183,7 @@ function Step4({ data, price, set }: { data: FormData; price: ReturnType<typeof 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         <div>
           <div className="section-title" style={{ fontSize: 14, marginBottom: 10 }}>Detalles del envío</div>
-          {[['Origen', data.origin], ['Destino', data.dest], ['Tipo', `${data.containers}× Contenedores 20ft`], ['Mercancía', data.description], ['Especial', Object.keys(data.special).filter(k => data.special[k]).join(', ') || 'Ninguno']].map(([l, v]) => (
+          {[['Servicio', planById(data.service).name], ['Origen', data.origin], ['Destino', data.dest], ['Tipo', `${data.containers}× ${CARGO_LABELS[data.cargoType] ?? 'Contenedor'}`], ['Mercancía', data.description], ['Especial', Object.keys(data.special).filter(k => data.special[k]).join(', ') || 'Ninguno']].map(([l, v]) => (
             <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 13.5 }}>
               <span style={{ color: 'var(--text-faint)' }}>{l}</span>
               <span style={{ fontWeight: 550, color: 'var(--text-strong)', textAlign: 'right', maxWidth: '60%' }}>{v}</span>
@@ -180,7 +211,7 @@ function Step4({ data, price, set }: { data: FormData; price: ReturnType<typeof 
         </div>
       </div>
       <div style={{ marginTop: 20, padding: 16, background: 'var(--gray-50)', borderRadius: 10, border: '1px solid var(--border-soft)' }}>
-        <Checkbox checked={data.terms} onChange={() => set('terms', !data.terms)} label="He revisado y acepto los términos y condiciones del servicio" />
+        <Checkbox checked={data.terms} onChange={() => set('terms', !data.terms)} label="He revisado los términos y acepto los precios de la tarifa" />
       </div>
     </Card>
   )
@@ -207,8 +238,8 @@ interface Props {
 export function CotizacionPage({ navigate, toast }: Props) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<FormData>({
-    origin: 'Ciudad de México', dest: 'Monterrey', cargoType: 'container', containers: 2, weight: '12000',
-    description: 'Equipos industriales para línea de ensamble', special: {}, customs: 'yes', operation: 'Importación', incoterm: 'DDP',
+    origin: 'Ciudad de México', dest: 'Monterrey', service: 'pro', cargoType: 'full', containers: 2, weight: '12000',
+    description: 'Equipos industriales para línea de ensamble', special: {}, customs: 'yes', operation: 'Importación',
     docs: { invoice: true, packing: true, bol: false, certs: false }, terms: false,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -249,7 +280,6 @@ export function CotizacionPage({ navigate, toast }: Props) {
         special: data.special,
         customs: data.customs,
         operation: data.operation,
-        incoterm: data.incoterm,
         price: price.total,
       })
       toast({ type: 'success', title: 'Cotización enviada', msg: `${q.ref_id} creada · revísala en Cotizaciones` })
@@ -270,27 +300,13 @@ export function CotizacionPage({ navigate, toast }: Props) {
 
       <div style={{ marginBottom: 26 }}><Steps steps={steps} current={step} /></div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: step === 3 ? '1fr' : 'minmax(0,1fr) 280px', gap: 22, alignItems: 'start' }} className="quote-cols">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 22, alignItems: 'start' }} className="quote-cols">
         <div className="enter-up" key={step}>
           {step === 0 && <Step1 data={data} set={set} errors={errors} />}
           {step === 1 && <Step2 data={data} />}
           {step === 2 && <Step3 data={data} set={set} errors={errors} />}
           {step === 3 && <Step4 data={data} price={price} set={set} />}
         </div>
-
-        {step !== 3 && (
-          <Card style={{ position: 'sticky', top: 84 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estimado en vivo</div>
-            <div className="mono tnum" style={{ fontSize: 32, fontWeight: 750, color: 'var(--text-strong)', margin: '8px 0 2px', letterSpacing: '-0.02em' }}>{fmtUSD(price.total)}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>USD · IVA incluido</div>
-            <div className="divider" style={{ margin: '16px 0' }} />
-            <PriceRow label={`Tarifa base (${data.containers} cont.)`} value={price.base} />
-            <PriceRow label="Peajes" value={price.tolls} />
-            {price.special > 0 && <PriceRow label="Manejo especial" value={price.special} />}
-            {price.customs > 0 && <PriceRow label="Aduanas" value={price.customs} faint />}
-            <PriceRow label={`IVA 16%`} value={price.iva} faint />
-          </Card>
-        )}
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginTop: 22, justifyContent: 'space-between' }}>

@@ -18,7 +18,7 @@ export function Logo({ size = 22, light = false, markOnly = false }: LogoProps) 
   return (
     <span className="logo" style={{ fontSize: size * 0.95, color: light ? '#fff' : 'var(--text-strong)' }}>
       {mark}
-      <span>Flet<span style={{ color: light ? '#fff' : 'var(--primary)' }}>App</span></span>
+      <span>Fleet<span style={{ color: light ? '#fff' : 'var(--primary)' }}>App</span></span>
     </span>
   )
 }

@@ -151,7 +151,7 @@ export function SoportePage({ navigate, toast }: Props) {
               {[
                 { icon: 'phone', label: 'Teléfono', sub: '+52 (55) 8000-3538 · Lun–Vie 8–20h', color: 'var(--green-600)' },
                 { icon: 'whatsapp', label: 'WhatsApp', sub: 'Respuesta típica < 1 hora', color: 'var(--green-500)' },
-                { icon: 'mail', label: 'Correo', sub: 'soporte@fletapp.mx', color: 'var(--primary)' },
+                { icon: 'mail', label: 'Correo', sub: 'soporte@fleetapp.mx', color: 'var(--primary)' },
               ].map(c => (
                 <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--border-soft)', borderRadius: 10, cursor: 'pointer' }}
                   onClick={() => toast({ type: 'info', title: c.label, msg: c.sub })}>

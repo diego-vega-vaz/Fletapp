@@ -320,7 +320,7 @@ function NotificacionesTab({ email, phone }: { email: string; phone: string }) {
     { key: 'email_transit' as NotificationKey, label: 'Envío en tránsito', sub: 'Cuando tu carga sale del origen' },
     { key: 'email_delivered' as NotificationKey, label: 'Entrega completada', sub: 'Confirmación de entrega exitosa' },
     { key: 'email_payment' as NotificationKey, label: 'Recordatorio de pago', sub: '48h antes del vencimiento de factura' },
-    { key: 'email_quotes' as NotificationKey, label: 'Cotizaciones nuevas', sub: 'Cuando FletApp genera una nueva oferta' },
+    { key: 'email_quotes' as NotificationKey, label: 'Cotizaciones nuevas', sub: 'Cuando FleetApp genera una nueva oferta' },
   ]
   const smsEvents = [
     { key: 'sms_transit' as NotificationKey, label: 'Salida del envío', sub: 'SMS cuando el camión parte' },
