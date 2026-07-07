@@ -4,126 +4,178 @@ import { Button } from '../components/ui/Button'
 import { Field, Input } from '../components/ui/Input'
 import { Icon } from '../components/ui/Icon'
 import { supabase } from '../lib/supabase'
+import type { PublicRoute } from '../types'
 
-interface Props {
+interface RegisterPageProps {
   onBack: () => void
+  onGo: (r: PublicRoute) => void
 }
 
-export function RegisterPage({ onBack }: Props) {
+export function RegisterPage({ onBack, onGo }: RegisterPageProps) {
+  const [step, setStep] = useState<'form' | 'success'>('form')
   const [name, setName] = useState('')
   const [company, setCompany] = useState('')
-  const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
+
+  function validatePhone(p: string) {
+    const digits = p.replace(/\D/g, '')
+    return digits.length >= 10
+  }
+
+  function validatePassword(p: string) {
+    return p.length >= 8
+  }
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (!name || !email || !password) { setError('Completa todos los campos requeridos'); return }
-    if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    if (!name.trim()) { setError('Ingresa tu nombre completo'); return }
+    if (!email.trim()) { setError('Ingresa tu correo electrónico'); return }
+    if (!password) { setError('Ingresa una contraseña'); return }
+    if (!validatePassword(password)) { setError('La contraseña debe tener al menos 8 caracteres'); return }
+    if (phone && !validatePhone(phone)) { setError('Ingresa un número de teléfono válido (10 dígitos)'); return }
 
     setLoading(true)
     const { error: err } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: name, company, phone: phone.trim() },
         emailRedirectTo: window.location.origin,
+        data: {
+          full_name: name.trim(),
+          company: company.trim(),
+          phone: phone.trim(),
+        },
       },
     })
     setLoading(false)
-
-    if (err) { setError(err.message); return }
-    setDone(true)
+    if (err) {
+      if (err.message.includes('already registered') || err.message.includes('already been registered')) {
+        setError('Este correo ya está registrado. ¿Olvidaste tu contraseña?')
+      } else {
+        setError('No pudimos crear tu cuenta. Intenta de nuevo.')
+      }
+      return
+    }
+    setStep('success')
   }
 
-  if (done) {
+  const passwordStrength = password.length === 0 ? null : password.length < 8 ? 'weak' : password.length < 12 ? 'fair' : 'strong'
+  const strengthColor = { weak: 'var(--red-500)', fair: 'var(--orange-500)', strong: 'var(--green-500)' }
+  const strengthLabel = { weak: 'Débil', fair: 'Aceptable', strong: 'Fuerte' }
+
+  if (step === 'success') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gray-50)' }}>
-        <div style={{ textAlign: 'center', maxWidth: 420, padding: '0 24px' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--green-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-            <Icon name="checkCircle" size={32} style={{ color: 'var(--green-500)' }} />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-raised)', padding: 24 }}>
+        <div style={{ background: '#fff', borderRadius: 20, padding: '52px 48px', maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.08)' }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--green-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <Icon name="mail" size={34} style={{ color: 'var(--green-500)' }} />
           </div>
-          <h2 style={{ fontSize: 24, fontWeight: 750, color: 'var(--text-strong)', marginBottom: 10 }}>¡Cuenta creada!</h2>
-          <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 28 }}>
-            Te enviamos un correo de confirmación a <strong>{email}</strong>. Haz clic en el enlace del correo y te llevaremos de vuelta a FleetApp para iniciar sesión.
+          <Logo size={22} style={{ justifyContent: 'center', marginBottom: 28 }} />
+          <h2 style={{ fontSize: 24, fontWeight: 750, color: 'var(--text-strong)', marginBottom: 14 }}>Revisa tu correo</h2>
+          <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 32 }}>
+            Enviamos un enlace de confirmación a <strong>{email}</strong>.<br />
+            Haz clic en el enlace para activar tu cuenta.
           </p>
-          <Button variant="primary" block onClick={onBack}>Ir a iniciar sesión</Button>
+          <div style={{ background: 'var(--blue-50)', borderRadius: 12, padding: '14px 20px', marginBottom: 28, textAlign: 'left' }}>
+            <p style={{ fontSize: 13, color: 'var(--blue-700)', lineHeight: 1.6, margin: 0 }}>
+              💡 No olvides revisar tu carpeta de <strong>spam o correo no deseado</strong> si no lo ves en unos minutos.
+            </p>
+          </div>
+          <Button variant="ghost" onClick={onBack} block>Volver al inicio de sesión</Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', minHeight: '100vh' }}>
-      {/* Brand side */}
-      <div className="login-brand" style={{ background: 'linear-gradient(145deg, var(--blue-700) 0%, var(--blue-500) 55%, var(--blue-400) 100%)', display: 'flex', flexDirection: 'column', padding: '44px 52px' }}>
-        <Logo size={26} light />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 16, maxWidth: 380 }}>
-            Únete a miles de empresas que ya usan FleetApp
-          </h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}>
-            Cotiza, rastrea y paga tus envíos terrestres en un solo lugar.
-          </p>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-raised)', padding: 24 }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '44px 48px', maxWidth: 520, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 36 }}>
+          <Logo size={22} />
+          <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <Icon name="arrowLeft" size={16} />
+            Iniciar sesión
+          </button>
         </div>
-      </div>
 
-      {/* Form side */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 52px', background: '#fff' }}>
-        <div style={{ width: '100%', maxWidth: 400 }}>
-          <h2 style={{ fontSize: 26, fontWeight: 750, color: 'var(--text-strong)', marginBottom: 6 }}>Crear cuenta</h2>
-          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 28 }}>
-            ¿Ya tienes cuenta?{' '}
-            <button onClick={onBack} style={{ color: 'var(--primary)', fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}>
-              Inicia sesión
-            </button>
-          </p>
+        <h2 style={{ fontSize: 'var(--fs-h1)', fontWeight: 700, color: 'var(--text-strong)', letterSpacing: '-0.02em', marginBottom: 8 }}>Crea tu cuenta</h2>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 28 }}>Gratis por 14 días, sin tarjeta de crédito.</p>
 
-          {error && (
-            <div style={{ padding: '10px 14px', background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 8, color: 'var(--red-500)', fontSize: 13.5, marginBottom: 18 }}>
-              {error}
-            </div>
-          )}
+        {error && (
+          <div style={{ padding: '10px 14px', background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 8, color: 'var(--red-500)', fontSize: 13.5, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name="alertCircle" size={15} />{error}
+          </div>
+        )}
 
-          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Field label="Nombre completo" required>
-              <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Diego Parado" autoFocus />
+              <Input iconLeft="user" value={name} onChange={e => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" />
             </Field>
-            <Field label="Empresa">
-              <input className="input" value={company} onChange={e => setCompany(e.target.value)} placeholder="Grupo Logístico del Norte" />
+            <Field label="Empresa (opcional)">
+              <Input iconLeft="briefcase" value={company} onChange={e => setCompany(e.target.value)} placeholder="Tu empresa" autoComplete="organization" />
             </Field>
-            <Field label="Correo electrónico" required>
-              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="diego@empresa.mx" />
-            </Field>
-            <Field label="Número de celular">
-              <Input iconLeft="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+52 55 0000 0000" />
-            </Field>
-            <Field label="Contraseña" required>
-              <Input
-                type={showPass ? 'text' : 'password'}
-                iconLeft="lock"
-                iconRight={showPass ? 'eyeOff' : 'eye'}
-                onIconRight={() => setShowPass(v => !v)}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-              />
-            </Field>
-            <Button variant="primary" block loading={loading} style={{ marginTop: 4, fontSize: 15 }}>
-              Crear cuenta
-            </Button>
-          </form>
+          </div>
+          <Field label="Correo electrónico" required>
+            <Input type="email" iconLeft="mail" value={email} onChange={e => setEmail(e.target.value)} placeholder="correo@empresa.mx" autoComplete="email" />
+          </Field>
+          <Field label="Teléfono (opcional)">
+            <Input type="tel" iconLeft="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="55 1234 5678" autoComplete="tel" />
+          </Field>
+          <Field label="Contraseña" required>
+            <Input type={showPassword ? 'text' : 'password'} iconLeft="lock" iconRight={showPassword ? 'eyeOff' : 'eye'} onIconRight={() => setShowPassword(v => !v)} value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
+            {passwordStrength && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                <div style={{ flex: 1, height: 4, borderRadius: 99, background: 'var(--border-soft)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', borderRadius: 99, background: strengthColor[passwordStrength], width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'fair' ? '66%' : '100%', transition: 'width 0.3s, background 0.3s' }} />
+                </div>
+                <span style={{ fontSize: 12, color: strengthColor[passwordStrength], fontWeight: 600, minWidth: 60 }}>{strengthLabel[passwordStrength]}</span>
+              </div>
+            )}
+          </Field>
 
-          <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 20, textAlign: 'center', lineHeight: 1.6 }}>
-            Al crear una cuenta aceptas los{' '}
-            <span style={{ color: 'var(--primary)', cursor: 'pointer' }}>Términos de servicio</span> y la{' '}
-            <span style={{ color: 'var(--primary)', cursor: 'pointer' }}>Política de privacidad</span>.
-          </p>
+          <div style={{ background: 'var(--surface-raised)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+              {[
+                { ok: password.length >= 8, text: 'Mínimo 8 caracteres' },
+                { ok: /[A-Z]/.test(password), text: 'Una mayúscula' },
+                { ok: /[0-9]/.test(password), text: 'Un número' },
+              ].map(({ ok, text }) => (
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name={ok ? 'checkCircle' : 'circle'} size={13} style={{ color: ok ? 'var(--green-500)' : 'var(--text-faint)' }} />
+                  <span style={{ fontSize: 12, color: ok ? 'var(--green-600)' : 'var(--text-faint)' }}>{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Button type="submit" variant="primary" size="lg" block loading={loading} style={{ marginTop: 4 }}>Crear cuenta gratuita</Button>
+        </form>
+
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-faint)', marginTop: 20, lineHeight: 1.6 }}>
+          Al registrarte aceptas nuestros{' '}
+          <button onClick={() => onGo('terminos')} style={{ color: 'var(--primary)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 12 }}>Términos de Servicio</button>
+          {' '}y{' '}
+          <button onClick={() => onGo('privacidad')} style={{ color: 'var(--primary)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 12 }}>Política de Privacidad</button>.
+        </p>
+
+        <div style={{ borderTop: '1px solid var(--border-soft)', marginTop: 20, paddingTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+          {[
+            { label: 'Soporte', action: () => window.open('mailto:soporte@fleetapp.mx', '_blank') },
+            { label: 'Términos', action: () => onGo('terminos') },
+            { label: 'Privacidad', action: () => onGo('privacidad') },
+          ].map(({ label, action }, i) => (
+            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button onClick={action} style={{ fontSize: 12, color: 'var(--text-faint)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{label}</button>
+              {i < 2 && <span style={{ color: 'var(--border)', fontSize: 12 }}>·</span>}
+            </span>
+          ))}
         </div>
       </div>
     </div>
