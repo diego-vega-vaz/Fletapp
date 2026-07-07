@@ -76,7 +76,7 @@ export function RegisterPage({ onBack, onGo }: RegisterPageProps) {
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--green-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
             <Icon name="mail" size={34} style={{ color: 'var(--green-500)' }} />
           </div>
-          <Logo size={22} style={{ justifyContent: 'center', marginBottom: 28 }} />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}><Logo size={22} /></div>
           <h2 style={{ fontSize: 24, fontWeight: 750, color: 'var(--text-strong)', marginBottom: 14 }}>Revisa tu correo</h2>
           <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 32 }}>
             Enviamos un enlace de confirmación a <strong>{email}</strong>.<br />
