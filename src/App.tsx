@@ -21,16 +21,43 @@ import { SoportePage } from './pages/SoportePage'
 import { TicketDetailPage } from './pages/TicketDetailPage'
 import { ConfigPage } from './pages/ConfigPage'
 import { ReportesPage } from './pages/ReportesPage'
+import { Logo } from './components/ui/Logo'
+import { Button } from './components/ui/Button'
+import { Icon } from './components/ui/Icon'
 import { getProfile } from './lib/db'
 import type { Plan } from './data/plans'
 import type { Route, NavParams, User, PublicRoute } from './types'
 
 interface Toast { id: number; type: string; title: string; msg?: string }
 
+function EmailConfirmedScreen({ onContinue }: { onContinue: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onContinue, 3000)
+    return () => clearTimeout(t)
+  }, [onContinue])
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-raised)', padding: 24 }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '52px 48px', maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.08)' }}>
+        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--green-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <Icon name="checkCircle" size={36} style={{ color: 'var(--green-500)' }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}><Logo size={22} /></div>
+        <h2 style={{ fontSize: 24, fontWeight: 750, color: 'var(--text-strong)', marginBottom: 12 }}>¡Tu cuenta está activa!</h2>
+        <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 32 }}>
+          Tu correo ha sido confirmado. Ya puedes usar FleetApp.
+        </p>
+        <Button variant="primary" size="lg" block onClick={onContinue}>Ir al dashboard</Button>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
 const [authed, setAuthed] = useState(false)
 const [authLoading, setAuthLoading] = useState(true)
 const [passwordRecovery, setPasswordRecovery] = useState(false)
+const [emailConfirmed, setEmailConfirmed] = useState(false)
 const [publicRoute, setPublicRoute] = useState<PublicRoute>('landing')
 const [route, setRoute] = useState<Route>('dashboard')
 const [params, setParams] = useState<NavParams | null>(null)
@@ -39,6 +66,12 @@ const [plan, setPlan] = useState<string | null>('free')
 const [toasts, setToasts] = useState<Toast[]>([])
 
 useEffect(() => {
+// Detect email confirmation redirect (type=signup in URL hash)
+if (window.location.hash.includes('type=signup')) {
+setEmailConfirmed(true)
+history.replaceState(null, '', window.location.pathname)
+}
+
 // Check existing session on load
 supabase.auth.getSession().then(({ data: { session } }) => {
 if (session?.user) {
@@ -109,7 +142,7 @@ return (
 )
 }
 
-// Flujo de recuperación de contraseña — tiene prioridad sobre todo lo demás
+// Flujo de recuperación de contraseña
 if (passwordRecovery) {
 return (
 <ResetPasswordPage
@@ -119,6 +152,11 @@ setAuthed(true)
 }}
 />
 )
+}
+
+// Pantalla de confirmación de correo
+if (emailConfirmed && authed) {
+return <EmailConfirmedScreen onContinue={() => setEmailConfirmed(false)} />
 }
 
 if (!authed) {
