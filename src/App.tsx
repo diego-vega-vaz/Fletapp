@@ -4,6 +4,7 @@ import { AppShell } from './components/layout/AppShell'
 import { PublicShell } from './components/layout/PublicShell'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { LandingPage } from './pages/LandingPage'
 import { PlanesPage } from './pages/PlanesPage'
 import { TerminosPage } from './pages/TerminosPage'
@@ -29,6 +30,7 @@ interface Toast { id: number; type: string; title: string; msg?: string }
 export default function App() {
 const [authed, setAuthed] = useState(false)
 const [authLoading, setAuthLoading] = useState(true)
+const [passwordRecovery, setPasswordRecovery] = useState(false)
 const [publicRoute, setPublicRoute] = useState<PublicRoute>('landing')
 const [route, setRoute] = useState<Route>('dashboard')
 const [params, setParams] = useState<NavParams | null>(null)
@@ -52,7 +54,12 @@ setAuthLoading(false)
 })
 
 // Listen for auth changes
-const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+if (event === 'PASSWORD_RECOVERY') {
+setPasswordRecovery(true)
+setAuthLoading(false)
+return
+}
 if (session?.user) {
 const u = session.user
 setUser({
@@ -90,6 +97,7 @@ setTimeout(() => setToasts(ts => ts.filter(x => x.id !== id)), 4000)
 const logout = async () => {
 await supabase.auth.signOut()
 setAuthed(false)
+setPasswordRecovery(false)
 setRoute('dashboard')
 }
 
@@ -98,6 +106,18 @@ return (
 <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 <span className="spinner" style={{ width: 32, height: 32 }} />
 </div>
+)
+}
+
+// Flujo de recuperación de contraseña — tiene prioridad sobre todo lo demás
+if (passwordRecovery) {
+return (
+<ResetPasswordPage
+onDone={() => {
+setPasswordRecovery(false)
+setAuthed(true)
+}}
+/>
 )
 }
 
