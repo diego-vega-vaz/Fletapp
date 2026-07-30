@@ -5,20 +5,34 @@ interface LogoProps {
 }
 
 export function Logo({ size = 22, light = false, markOnly = false }: LogoProps) {
+  const iconColor = light ? '#fff' : 'var(--primary)'
+  const textColor = light ? '#fff' : 'var(--text-strong)'
+
+  // Arrow mark: two rectangles forming a northeast arrow (matches brand logo)
   const mark = (
-    <span className="logo-mark" style={{ width: size * 1.45, height: size * 1.45, borderRadius: size * 0.42 }}>
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'relative', zIndex: 1 }}>
-        <path d="M5 17.5h3M16 17.5h3" opacity="0.55" />
-        <path d="M4 7l8 0M4 12l11 0" />
-        <path d="M14 5l5 5-5 5" />
-      </svg>
-    </span>
+    <svg
+      width={Math.round(size * 1.2)}
+      height={size}
+      viewBox="0 0 44 40"
+      fill={iconColor}
+      style={{ flexShrink: 0, display: 'block' }}
+    >
+      {/* Diagonal bar: lower-left to upper-right */}
+      <polygon points="0,40 12,40 44,8 32,8" />
+      {/* Top horizontal bar */}
+      <polygon points="20,0 44,0 44,8 20,8" />
+    </svg>
   )
+
   if (markOnly) return mark
+
   return (
-    <span className="logo" style={{ fontSize: size * 0.95, color: light ? '#fff' : 'var(--text-strong)' }}>
+    <span className="logo" style={{ fontSize: size * 0.95, color: textColor }}>
       {mark}
-      <span>Fleet<span style={{ color: light ? '#fff' : 'var(--primary)' }}>App</span></span>
+      <span>
+        <span style={{ fontWeight: 700 }}>Fleet</span>
+        <span style={{ fontWeight: 400 }}>App</span>
+      </span>
     </span>
   )
 }
