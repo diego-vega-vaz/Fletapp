@@ -4,27 +4,25 @@ interface LogoProps {
   markOnly?: boolean
 }
 
+// ─────────────────────────────────────────────────────────
+//  Para cambiar el logo:
+//  1. Ve a la carpeta  public/  en GitHub
+//  2. Sube tu archivo  logo-mark.svg  (o logo-mark.png)
+//  3. Listo — no necesitas tocar este código
+// ─────────────────────────────────────────────────────────
+
 export function Logo({ size = 24, light = false, markOnly = false }: LogoProps) {
   const textColor = light ? '#fff' : 'var(--text-strong)'
   const boxSize = Math.round(size * 1.5)
-  const svgSize = Math.round(boxSize * 0.68)
 
-  // Blue square background + white arrow inside = matches brand logo
   const mark = (
-    <span
-      className="logo-mark"
-      style={{ width: boxSize, height: boxSize, borderRadius: Math.round(boxSize * 0.22), flexShrink: 0 }}
-    >
-      <svg
-        width={svgSize}
-        height={svgSize}
-        viewBox="0 0 40 40"
-        fill="#fff"
-        style={{ position: 'relative', zIndex: 1 }}
-      >
-        <polygon points="0,40 20,40 40,20 40,0 20,0 20,20" />
-      </svg>
-    </span>
+    <img
+      src="/logo-mark.svg"
+      width={boxSize}
+      height={boxSize}
+      alt="FleetApp"
+      style={{ flexShrink: 0, display: 'block', borderRadius: Math.round(boxSize * 0.22) }}
+    />
   )
 
   if (markOnly) return mark
