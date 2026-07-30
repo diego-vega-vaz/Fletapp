@@ -4,10 +4,9 @@ interface LogoProps {
   markOnly?: boolean
 }
 
-// Para cambiar el logo:
-// 1. Ve a la carpeta public/ en GitHub
-// 2. Sube tu archivo y llámalo logo-mark.png
-// 3. Commit — listo, sin tocar código
+// Para cambiar el logo en el futuro:
+// Sube tu archivo a public/ en GitHub con el nombre logo-mark.png.jpg
+// y Vercel lo publica automático
 
 export function Logo({ size = 24, light = false, markOnly = false }: LogoProps) {
   const textColor = light ? '#fff' : 'var(--text-strong)'
@@ -15,7 +14,7 @@ export function Logo({ size = 24, light = false, markOnly = false }: LogoProps) 
 
   const mark = (
     <img
-      src="/logo-mark.png"
+      src="/logo-mark.png.jpg"
       width={boxSize}
       height={boxSize}
       alt="FleetApp"
