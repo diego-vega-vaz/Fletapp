@@ -5,19 +5,26 @@ interface LogoProps {
 }
 
 export function Logo({ size = 24, light = false, markOnly = false }: LogoProps) {
-  const iconColor = light ? '#fff' : 'var(--primary)'
   const textColor = light ? '#fff' : 'var(--text-strong)'
+  const boxSize = Math.round(size * 1.5)
+  const svgSize = Math.round(boxSize * 0.68)
 
+  // Blue square background + white arrow inside = matches brand logo
   const mark = (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      fill={iconColor}
-      style={{ flexShrink: 0, display: 'block' }}
+    <span
+      className="logo-mark"
+      style={{ width: boxSize, height: boxSize, borderRadius: Math.round(boxSize * 0.22), flexShrink: 0 }}
     >
-      <polygon points="0,40 20,40 40,20 40,0 20,0 20,20" />
-    </svg>
+      <svg
+        width={svgSize}
+        height={svgSize}
+        viewBox="0 0 40 40"
+        fill="#fff"
+        style={{ position: 'relative', zIndex: 1 }}
+      >
+        <polygon points="0,40 20,40 40,20 40,0 20,0 20,20" />
+      </svg>
+    </span>
   )
 
   if (markOnly) return mark
