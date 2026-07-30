@@ -8,15 +8,17 @@ export function Logo({ size = 22, light = false, markOnly = false }: LogoProps) 
   const iconColor = light ? '#fff' : 'var(--primary)'
   const textColor = light ? '#fff' : 'var(--text-strong)'
 
+  // Two equal-thickness bars forming ↗ — single 6-point polygon, no overlap
+  // viewBox 46×40: both bars ~35% of mark height (perp ≈ 14px)
   const mark = (
     <svg
       width={Math.round(size * 1.15)}
       height={size}
-      viewBox="0 0 44 40"
+      viewBox="0 0 46 40"
       fill={iconColor}
       style={{ flexShrink: 0, display: 'block' }}
     >
-      <polygon points="0,40 16,40 44,12 44,0 28,0 28,12" />
+      <polygon points="0,40 20,40 46,14 46,0 26,0 26,14" />
     </svg>
   )
 
