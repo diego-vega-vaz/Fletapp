@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Logo } from '../ui/Logo'
 import { Button } from '../ui/Button'
 import type { PublicRoute } from '../../types'
@@ -9,9 +10,11 @@ interface Props {
 }
 
 export function PublicShell({ go, active, children }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   const navLink = (label: string, r: PublicRoute) => (
     <button
-      onClick={() => go(r)}
+      onClick={() => { go(r); setMenuOpen(false) }}
       style={{
         fontSize: 14, fontWeight: 600,
         color: active === r ? 'var(--primary)' : 'var(--text-muted)',
@@ -22,6 +25,15 @@ export function PublicShell({ go, active, children }: Props) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#fff' }}>
+      <style>{`
+        .public-nav { display: flex; }
+        .hamburger-btn { display: none !important; }
+        @media (max-width: 640px) {
+          .public-nav { display: none !important; }
+          .hamburger-btn { display: flex !important; }
+        }
+      `}</style>
+
       {/* Top nav */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
@@ -32,12 +44,51 @@ export function PublicShell({ go, active, children }: Props) {
         <button onClick={() => go('landing')} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
           <Logo size={24} />
         </button>
+
+        {/* Desktop nav */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: 22 }} className="public-nav">
           {navLink('Planes', 'planes')}
           {navLink('Iniciar sesión', 'login')}
           <Button variant="primary" size="sm" onClick={() => go('register')}>Crear cuenta gratis</Button>
         </nav>
+
+        {/* Hamburger button — mobile only */}
+        <button
+          className="hamburger-btn"
+          onClick={() => setMenuOpen(o => !o)}
+          style={{
+            background: 'none', border: '1px solid var(--border-soft)',
+            borderRadius: 8, cursor: 'pointer', padding: '6px 10px',
+            fontSize: 18, color: 'var(--text-strong)',
+            alignItems: 'center', justifyContent: 'center',
+          }}
+          aria-label="Menú"
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
       </header>
+
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div style={{
+          position: 'fixed', top: 57, left: 0, right: 0, zIndex: 49,
+          background: '#fff', borderBottom: '1px solid var(--border-soft)',
+          display: 'flex', flexDirection: 'column', padding: '12px 28px 20px', gap: 4,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        }}>
+          <button
+            onClick={() => { go('planes'); setMenuOpen(false) }}
+            style={{ fontSize: 15, fontWeight: 600, color: active === 'planes' ? 'var(--primary)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', textAlign: 'left' }}
+          >Planes</button>
+          <button
+            onClick={() => { go('login'); setMenuOpen(false) }}
+            style={{ fontSize: 15, fontWeight: 600, color: active === 'login' ? 'var(--primary)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', textAlign: 'left' }}
+          >Iniciar sesión</button>
+          <div style={{ marginTop: 8 }}>
+            <Button variant="primary" size="sm" onClick={() => { go('register'); setMenuOpen(false) }}>Crear cuenta gratis</Button>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <main style={{ flex: 1 }}>{children}</main>
@@ -64,4 +115,4 @@ export function PublicShell({ go, active, children }: Props) {
       </footer>
     </div>
   )
-}
+                                                      }
