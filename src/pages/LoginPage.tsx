@@ -53,7 +53,7 @@ export function LoginPage({ onLogin, onRegister, onGo }: LoginPageProps) {
   const benefits = [
     { icon: 'zap', text: 'Cotiza en minutos, no en días' },
     { icon: 'mapPin', text: 'Rastreo en tiempo real de tu carga' },
-    { icon: 'shield', text: 'Pagos seguros y facturación CFDI' },
+    { icon: 'shield', text: 'Comprobante y control de pagos por envío' },
   ]
 
   return (
