@@ -166,12 +166,12 @@ function EmpresaTab({ profile, onSaved }: { profile: DbProfile; onSaved: (p: Par
 
   return (
     <div>
-      <SectionHead title="Datos fiscales" sub="Esta información se usa para emitir tus facturas CFDI 4.0" />
+      <SectionHead title="Datos fiscales" sub="Los guardamos para la facturación CFDI 4.0, que estará disponible más adelante" />
 
       {!complete && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--orange-50)', borderRadius: 10, fontSize: 13, color: 'var(--orange-600)', marginBottom: 20 }}>
           <Icon name="alertCircle" size={16} />
-          Completa tus datos fiscales para poder generar facturas CFDI válidas.
+          Completa tus datos fiscales para dejarlos listos para cuando se active la facturación.
         </div>
       )}
 
