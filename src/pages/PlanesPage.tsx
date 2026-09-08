@@ -11,7 +11,7 @@ interface Props {
 const FAQ = [
   { q: '¿Puedo cambiar de plan cuando quiera?', a: 'Sí. Puedes mejorar o cambiar tu plan en cualquier momento. El cobro se ajusta de forma proporcional.' },
   { q: '¿Necesito tarjeta para el plan Gratis?', a: 'No. El plan Gratis no requiere tarjeta y puedes usarlo el tiempo que quieras.' },
-  { q: '¿Los precios incluyen IVA?', a: 'Los precios mostrados son en pesos mexicanos (MXN) más IVA. Recibirás tu factura CFDI por cada cobro.' },
+  { q: '¿Los precios incluyen IVA?', a: 'Los precios mostrados son en pesos mexicanos (MXN) más IVA. Por cada cobro recibes tu comprobante; la facturación CFDI 4.0 está en integración.' },
   { q: '¿Cómo funciona el plan Empresa?', a: 'El plan Empresa se cotiza según tu volumen de envíos. Contáctanos y te armamos una propuesta a la medida.' },
 ]
 
@@ -33,7 +33,7 @@ export function PlanesPage({ currentPlan, onSelect, inApp }: Props) {
       <div style={{ marginTop: 48, textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13.5, color: 'var(--text-muted)', background: 'var(--gray-50)', border: '1px solid var(--border-soft)', borderRadius: 999, padding: '8px 16px' }}>
           <Icon name="shield" size={15} style={{ color: 'var(--green-600)' }} />
-          Pagos protegidos · Facturación CFDI 4.0 · Cancela en cualquier momento
+          Precios en pesos mexicanos · Cancela en cualquier momento
         </div>
       </div>
 

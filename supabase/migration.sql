@@ -75,7 +75,9 @@ create table if not exists invoices (
   user_id      uuid references auth.users on delete cascade not null,
   shipment_id  uuid references shipments,
   ref_id       text unique default ('A-' || to_char(now(),'YYYY') || '-' || lpad(nextval('invoice_seq')::text,4,'0')),
-  uuid_cfdi    text default (gen_random_uuid()::text),
+  -- Folio fiscal real del CFDI timbrado. Se llena SOLO desde el servidor,
+  -- con la respuesta del PAC. Nunca se genera localmente. Null = sin timbrar.
+  uuid_cfdi    text,
   concept      text,
   amount       numeric,
   status       text default 'pending',   -- pending | paid | overdue

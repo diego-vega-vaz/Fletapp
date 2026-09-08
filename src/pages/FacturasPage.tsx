@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
-import { IconButton } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
 import { Tabs } from '../components/ui/Tabs'
-import { Tooltip, Spinner } from '../components/ui/Misc'
+import { Spinner } from '../components/ui/Misc'
 import { getInvoices, type DbInvoice } from '../lib/db'
 import { exportToCsv } from '../lib/export'
 import { fmtUSD } from '../data/mockData'
@@ -42,9 +41,8 @@ export function FacturasPage({ navigate, toast }: Props) {
   const pendingCount = invoices.filter(i => i.status === 'pending').length
 
   function handleExport() {
-    exportToCsv('facturas-fleetapp', [
-      { header: 'Factura', value: i => i.ref_id },
-      { header: 'UUID CFDI', value: i => i.uuid_cfdi },
+    exportToCsv('comprobantes-fletapp', [
+      { header: 'Comprobante', value: i => i.ref_id },
       { header: 'Concepto', value: i => i.concept },
       { header: 'Monto', value: i => i.amount },
       { header: 'Estado', value: i => i.status },
@@ -52,15 +50,15 @@ export function FacturasPage({ navigate, toast }: Props) {
       { header: 'Emitida', value: i => i.issued_at },
       { header: 'Vence', value: i => i.due_at },
     ], invoices)
-    toast({ type: 'success', title: 'Facturas exportadas', msg: `${invoices.length} facturas en CSV (Excel)` })
+    toast({ type: 'success', title: 'Comprobantes exportados', msg: `${invoices.length} comprobantes en CSV (Excel)` })
   }
 
   return (
     <div>
       <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 className="page-title">Pagos & Facturas</h1>
-          <p className="page-sub">Administra tus facturas CFDI, pagos y métodos de cobro.</p>
+          <h1 className="page-title">Pagos y comprobantes</h1>
+          <p className="page-sub">Administra tus comprobantes de cobro, pagos y métodos de pago.</p>
         </div>
         <Button variant="secondary" icon="download" onClick={handleExport} disabled={loading || invoices.length === 0}>
           Exportar a Excel
@@ -69,9 +67,9 @@ export function FacturasPage({ navigate, toast }: Props) {
 
       <div className="grid-3" style={{ marginBottom: 22 }}>
         {[
-          { icon: 'dollar', color: 'var(--orange-600)', bg: 'var(--orange-50)', label: 'Pendiente por pagar', value: fmtUSD(pending), sub: `${pendingCount} factura${pendingCount !== 1 ? 's' : ''}`, cta: pendingCount > 0 ? 'Pagar ahora' : undefined, onCta: () => navigate('pago', { id: 'pendiente' }) },
-          { icon: 'checkCircle', color: 'var(--green-600)', bg: 'var(--green-50)', label: 'Total pagado', value: fmtUSD(paidTotal), sub: `${invoices.filter(i => i.status === 'paid').length} facturas liquidadas` },
-          { icon: 'fileText', color: 'var(--primary)', bg: 'var(--blue-50)', label: 'Total facturas', value: String(invoices.length), sub: 'Todas las facturas CFDI' },
+          { icon: 'dollar', color: 'var(--orange-600)', bg: 'var(--orange-50)', label: 'Pendiente por pagar', value: fmtUSD(pending), sub: `${pendingCount} comprobante${pendingCount !== 1 ? 's' : ''}`, cta: pendingCount > 0 ? 'Pagar ahora' : undefined, onCta: () => navigate('pago', { id: 'pendiente' }) },
+          { icon: 'checkCircle', color: 'var(--green-600)', bg: 'var(--green-50)', label: 'Total pagado', value: fmtUSD(paidTotal), sub: `${invoices.filter(i => i.status === 'paid').length} comprobantes liquidados` },
+          { icon: 'fileText', color: 'var(--primary)', bg: 'var(--blue-50)', label: 'Total de comprobantes', value: String(invoices.length), sub: 'Emitidos por FletApp' },
         ].map(c => (
           <Card key={c.label} hover style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span style={{ width: 40, height: 40, borderRadius: 11, background: c.bg, color: c.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -89,31 +87,35 @@ export function FacturasPage({ navigate, toast }: Props) {
 
       <div style={{ marginBottom: 18 }}>
         <Tabs
-          tabs={[{ id: 'facturas', label: 'Facturas', icon: 'fileText' }, { id: 'pagos', label: 'Historial de pagos', icon: 'card' }, { id: 'metodos', label: 'Métodos de pago', icon: 'building' }]}
+          tabs={[{ id: 'facturas', label: 'Comprobantes', icon: 'fileText' }, { id: 'pagos', label: 'Historial de pagos', icon: 'card' }, { id: 'metodos', label: 'Métodos de pago', icon: 'building' }]}
           active={tab} onChange={setTab}
         />
       </div>
 
       {tab === 'facturas' && (
+        <>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 16px', background: 'var(--orange-50)', border: '1px solid var(--border-soft)', borderRadius: 10, fontSize: 13, color: 'var(--orange-600)', marginBottom: 16 }}>
+          <Icon name="alertCircle" size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+          <span>Estos son comprobantes internos de cobro y <strong>no tienen validez fiscal</strong>. La facturación CFDI 4.0 con Carta Porte estará disponible más adelante.</span>
+        </div>
         <Card pad={false}>
           {loading ? (
             <div style={{ padding: 48, textAlign: 'center' }}><Spinner size={28} /></div>
           ) : invoices.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center' }}>
               <Icon name="fileText" size={32} style={{ color: 'var(--border)', marginBottom: 10 }} />
-              <p style={{ fontSize: 14, color: 'var(--text-faint)' }}>No tienes facturas aún. Aparecerán cuando aceptes una cotización.</p>
+              <p style={{ fontSize: 14, color: 'var(--text-faint)' }}>No tienes comprobantes aún. Aparecerán cuando aceptes una cotización.</p>
             </div>
           ) : (
             <table className="data-table">
               <thead>
-                <tr><th>Factura</th><th>Concepto</th><th>Fecha</th><th>Estado</th><th style={{ textAlign: 'right' }}>Monto</th><th></th></tr>
+                <tr><th>Comprobante</th><th>Concepto</th><th>Fecha</th><th>Estado</th><th style={{ textAlign: 'right' }}>Monto</th><th></th></tr>
               </thead>
               <tbody>
                 {invoices.map(inv => (
                   <tr key={inv.id}>
                     <td>
                       <span className="mono" style={{ fontWeight: 600, color: 'var(--text-strong)', fontSize: 13 }}>{inv.ref_id}</span>
-                      <div className="mono" style={{ fontSize: 10.5, color: 'var(--text-faint)', marginTop: 2 }}>CFDI {(inv.uuid_cfdi ?? '').slice(0, 18)}…</div>
                     </td>
                     <td>
                       <div style={{ fontSize: 13.5, color: 'var(--text-strong)', fontWeight: 550 }}>{inv.concept ?? '—'}</div>
@@ -130,10 +132,7 @@ export function FacturasPage({ navigate, toast }: Props) {
                       {inv.status === 'pending'
                         ? <Button size="sm" variant="success" onClick={() => navigate('pago', { id: inv.ref_id })}>Pagar</Button>
                         : (
-                          <div style={{ display: 'inline-flex', gap: 4 }}>
-                            <Tooltip text="Descargar PDF"><IconButton name="download" size={17} sm onClick={() => toast({ type: 'success', title: `${inv.ref_id}.pdf descargado` })} /></Tooltip>
-                            <Tooltip text="Descargar XML"><IconButton name="fileText" size={17} sm onClick={() => toast({ type: 'success', title: `${inv.ref_id}.xml descargado` })} /></Tooltip>
-                          </div>
+                          <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Liquidado</span>
                         )}
                     </td>
                   </tr>
@@ -142,6 +141,7 @@ export function FacturasPage({ navigate, toast }: Props) {
             </table>
           )}
         </Card>
+        </>
       )}
 
       {tab === 'pagos' && (
@@ -156,7 +156,7 @@ export function FacturasPage({ navigate, toast }: Props) {
           ) : (
             <table className="data-table">
               <thead>
-                <tr><th>Factura</th><th>Concepto</th><th>Método</th><th>Fecha</th><th style={{ textAlign: 'right' }}>Monto</th></tr>
+                <tr><th>Comprobante</th><th>Concepto</th><th>Método</th><th>Fecha</th><th style={{ textAlign: 'right' }}>Monto</th></tr>
               </thead>
               <tbody>
                 {invoices.filter(i => i.status === 'paid').map(inv => (
@@ -188,7 +188,7 @@ export function FacturasPage({ navigate, toast }: Props) {
           <Card>
             <div className="section-title" style={{ fontSize: 15, marginBottom: 14 }}>Otros métodos</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[['Transferencia SPEI', 'CLABE: 002154007000000001', 'building'], ['Crédito FleetApp', 'Contacta a tu ejecutivo para activar', 'zap']].map(([l, sub, ic]) => (
+              {[['Transferencia SPEI', 'Solicita los datos bancarios a tu ejecutivo', 'building'], ['Crédito FletApp', 'Contacta a tu ejecutivo para activar', 'zap']].map(([l, sub, ic]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, border: '1px solid var(--border-soft)', borderRadius: 10 }}>
                   <Icon name={ic} size={20} style={{ color: 'var(--text-faint)' }} />
                   <div>
