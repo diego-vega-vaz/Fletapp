@@ -10,7 +10,7 @@ interface Props {
 const FEATURES = [
   { icon: 'zap', name: 'Cotiza al instante', desc: 'Tarifas de flete terrestre en minutos, con desglose claro de costos, peajes e IVA.' },
   { icon: 'mapPin', name: 'Rastreo en tiempo real', desc: 'Sigue tu carga en el mapa, con ETA y notificaciones en cada etapa del recorrido.' },
-  { icon: 'fileText', name: 'Facturación CFDI', desc: 'Genera y descarga tus facturas CFDI 4.0 automáticamente con cada envío.' },
+  { icon: 'fileText', name: 'Comprobantes por envío', desc: 'Cada envío genera su comprobante de cobro con desglose. Facturación CFDI 4.0 en integración.' },
   { icon: 'shield', name: 'Pagos seguros', desc: 'Cobros protegidos, anticipos y saldos liberados solo al confirmar la entrega.' },
   { icon: 'package', name: 'Gestión de documentos', desc: 'Sube y organiza cartas porte, facturas y comprobantes por cada envío.' },
   { icon: 'chat', name: 'Soporte cuando lo necesitas', desc: 'Tickets y chat con tiempos de respuesta menores a 2 horas.' },
@@ -18,7 +18,7 @@ const FEATURES = [
 
 const STEPS = [
   { n: '1', title: 'Cotiza tu envío', desc: 'Ingresa origen, destino y carga. Recibe tu precio al instante.' },
-  { n: '2', title: 'Acepta y agenda', desc: 'Confirma la cotización y se genera tu envío con su factura.' },
+  { n: '2', title: 'Acepta y agenda', desc: 'Confirma la cotización y se genera tu envío con su comprobante.' },
   { n: '3', title: 'Rastrea y recibe', desc: 'Sigue tu carga en vivo y paga el saldo al confirmar la entrega.' },
 ]
 
@@ -59,7 +59,7 @@ export function LandingPage({ go }: Props) {
             </Button>
           </div>
           <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', marginTop: 36, fontSize: 13.5, color: 'rgba(255,255,255,0.85)' }}>
-            {['Sin tarjeta requerida', 'Facturación CFDI', 'Cancela cuando quieras'].map(t => (
+            {['Sin tarjeta requerida', 'Precios en pesos', 'Cancela cuando quieras'].map(t => (
               <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="check" size={15} />{t}</span>
             ))}
           </div>
