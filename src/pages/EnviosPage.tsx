@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { fmtUSD } from '../data/mockData'
+import { fmtMXN } from '../data/mockData'
 import { StatusBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Input, Select } from '../components/ui/Input'
@@ -234,11 +234,11 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
                   </td>
                   <td>
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }} className="tnum">
-                      {fmtUSD(s.price)}
+                      {fmtMXN(s.price)}
                     </div>
                     {s.paid < s.price && (
                       <div style={{ fontSize: 12, color: 'var(--orange-500)', fontWeight: 600 }}>
-                        Pagado: {fmtUSD(s.paid)}
+                        Pagado: {fmtMXN(s.paid)}
                       </div>
                     )}
                   </td>
