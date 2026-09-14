@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { fmtUSD } from '../data/mockData'
+import { fmtMXN } from '../data/mockData'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
@@ -245,7 +245,7 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                   </td>
                   <td>
                     <span className="tnum" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>
-                      {q.price != null ? fmtUSD(q.price) : '—'}
+                      {q.price != null ? fmtMXN(q.price) : '—'}
                     </span>
                   </td>
                   <td>
