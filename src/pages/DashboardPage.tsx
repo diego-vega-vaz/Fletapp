@@ -6,7 +6,7 @@ import { StatusBadge } from '../components/ui/Badge'
 import { Segmented } from '../components/ui/Tabs'
 import { Spinner } from '../components/ui/Misc'
 import { getDashboardStats, type DbShipment } from '../lib/db'
-import { fmtUSD } from '../data/mockData'
+import { fmtMXN } from '../data/mockData'
 import type { Route, NavParams, User } from '../types'
 
 function KpiCard({ icon, iconBg, iconColor, label, value, unit }: {
@@ -49,7 +49,7 @@ function ShipmentRow({ s, navigate, onPay }: { s: DbShipment; navigate: (r: Rout
         </div>
       </div>
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <div className="mono tnum" style={{ fontWeight: 700, color: 'var(--text-strong)', fontSize: 15 }}>{fmtUSD(s.price)}</div>
+        <div className="mono tnum" style={{ fontWeight: 700, color: 'var(--text-strong)', fontSize: 15 }}>{fmtMXN(s.price)}</div>
       </div>
       <div style={{ flexShrink: 0 }}>
         {s.status === 'waiting'
@@ -133,7 +133,7 @@ export function DashboardPage({ navigate, user, onPay }: Props) {
           <div className="kpi-grid" style={{ marginBottom: 22 }}>
             <KpiCard icon="fileText" iconBg="var(--blue-50)" iconColor="var(--primary)" value={String(stats?.quotes.length ?? 0)} label="Cotizaciones totales" />
             <KpiCard icon="clock" iconBg="var(--orange-50)" iconColor="var(--orange-600)" value={String(stats?.pending.length ?? 0)} label="Pagos pendientes" />
-            <KpiCard icon="dollar" iconBg="var(--green-50)" iconColor="var(--green-600)" value={fmtUSD(stats?.paidAmount ?? 0)} label="Total pagado" />
+            <KpiCard icon="dollar" iconBg="var(--green-50)" iconColor="var(--green-600)" value={fmtMXN(stats?.paidAmount ?? 0)} label="Total pagado" />
             <KpiCard icon="truck" iconBg="var(--cyan-50)" iconColor="var(--cyan-500)" value={String(stats?.active.length ?? 0)} label="Envíos en tránsito" />
           </div>
 
@@ -188,7 +188,7 @@ export function DashboardPage({ navigate, user, onPay }: Props) {
                           </span>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text-strong)' }}>{inv.concept || 'Pago pendiente'}</div>
-                            <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{fmtUSD(inv.amount ?? 0)} · Vence {inv.due_at ?? '—'}</div>
+                            <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{fmtMXN(inv.amount ?? 0)} · Vence {inv.due_at ?? '—'}</div>
                             <Button size="sm" variant="success" style={{ marginTop: 8 }} onClick={() => navigate('pago', { id: inv.ref_id })}>Pagar</Button>
                           </div>
                         </div>

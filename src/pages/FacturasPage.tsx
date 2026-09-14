@@ -6,7 +6,7 @@ import { Tabs } from '../components/ui/Tabs'
 import { Spinner } from '../components/ui/Misc'
 import { getInvoices, type DbInvoice } from '../lib/db'
 import { exportToCsv } from '../lib/export'
-import { fmtUSD } from '../data/mockData'
+import { fmtMXN } from '../data/mockData'
 import type { Route, NavParams } from '../types'
 
 function InvBadge({ status }: { status: string }) {
@@ -67,8 +67,8 @@ export function FacturasPage({ navigate, toast }: Props) {
 
       <div className="grid-3" style={{ marginBottom: 22 }}>
         {[
-          { icon: 'dollar', color: 'var(--orange-600)', bg: 'var(--orange-50)', label: 'Pendiente por pagar', value: fmtUSD(pending), sub: `${pendingCount} comprobante${pendingCount !== 1 ? 's' : ''}`, cta: pendingCount > 0 ? 'Pagar ahora' : undefined, onCta: () => navigate('pago', { id: 'pendiente' }) },
-          { icon: 'checkCircle', color: 'var(--green-600)', bg: 'var(--green-50)', label: 'Total pagado', value: fmtUSD(paidTotal), sub: `${invoices.filter(i => i.status === 'paid').length} comprobantes liquidados` },
+          { icon: 'dollar', color: 'var(--orange-600)', bg: 'var(--orange-50)', label: 'Pendiente por pagar', value: fmtMXN(pending), sub: `${pendingCount} comprobante${pendingCount !== 1 ? 's' : ''}`, cta: pendingCount > 0 ? 'Pagar ahora' : undefined, onCta: () => navigate('pago', { id: 'pendiente' }) },
+          { icon: 'checkCircle', color: 'var(--green-600)', bg: 'var(--green-50)', label: 'Total pagado', value: fmtMXN(paidTotal), sub: `${invoices.filter(i => i.status === 'paid').length} comprobantes liquidados` },
           { icon: 'fileText', color: 'var(--primary)', bg: 'var(--blue-50)', label: 'Total de comprobantes', value: String(invoices.length), sub: 'Emitidos por FletApp' },
         ].map(c => (
           <Card key={c.label} hover style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -126,7 +126,7 @@ export function FacturasPage({ navigate, toast }: Props) {
                     </td>
                     <td><InvBadge status={inv.status} /></td>
                     <td style={{ textAlign: 'right' }}>
-                      <span className="mono tnum" style={{ fontWeight: 700, color: 'var(--text-strong)' }}>{fmtUSD(inv.amount ?? 0)}</span>
+                      <span className="mono tnum" style={{ fontWeight: 700, color: 'var(--text-strong)' }}>{fmtMXN(inv.amount ?? 0)}</span>
                     </td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {inv.status === 'pending'
@@ -165,7 +165,7 @@ export function FacturasPage({ navigate, toast }: Props) {
                     <td style={{ fontSize: 13, color: 'var(--text)' }}>{inv.concept ?? '—'}</td>
                     <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{inv.method ?? '—'}</td>
                     <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{inv.issued_at ?? '—'}</td>
-                    <td style={{ textAlign: 'right' }}><span className="mono tnum" style={{ fontWeight: 700, color: 'var(--green-600)' }}>{fmtUSD(inv.amount ?? 0)}</span></td>
+                    <td style={{ textAlign: 'right' }}><span className="mono tnum" style={{ fontWeight: 700, color: 'var(--green-600)' }}>{fmtMXN(inv.amount ?? 0)}</span></td>
                   </tr>
                 ))}
               </tbody>

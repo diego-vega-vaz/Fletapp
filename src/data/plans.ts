@@ -61,5 +61,5 @@ export const PLANS: Plan[] = [
 export const planById = (id?: string | null): Plan =>
   PLANS.find(p => p.id === id) ?? PLANS[0]
 
-export const fmtMXN = (n: number) =>
-  new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n)
+// Reexportado para no tener dos formateadores de dinero distintos en el codigo.
+export { fmtMXN } from './mockData'

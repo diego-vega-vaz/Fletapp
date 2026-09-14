@@ -5,8 +5,8 @@ import { Icon } from '../components/ui/Icon'
 import { Field, Input, Select, Checkbox, Textarea } from '../components/ui/Input'
 import { Steps } from '../components/ui/Steps'
 import { StaticRouteMap } from '../components/shared/MexicoMap'
-import { fmtUSD } from '../data/mockData'
-import { PLANS, planById, fmtMXN } from '../data/plans'
+import { fmtMXN } from '../data/mockData'
+import { PLANS, planById } from '../data/plans'
 import { createQuote } from '../lib/db'
 import type { Route, NavParams } from '../types'
 
@@ -33,7 +33,8 @@ interface FormData {
 }
 
 function PriceRow({ label, value, faint, total }: { label: string; value: number | string; faint?: boolean; total?: boolean }) {
-  const display = typeof value === 'number' ? fmtUSD(value) : value
+  // El total lleva la moneda explicita: es el numero que el cliente compara y aprueba.
+  const display = typeof value === 'number' ? fmtMXN(value) + (total ? ' MXN' : '') : value
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: total ? 15 : 13.5, fontWeight: total ? 750 : 500, color: faint ? 'var(--text-faint)' : total ? 'var(--text-strong)' : 'var(--text-muted)', borderTop: total ? '1px solid var(--border-soft)' : undefined, marginTop: total ? 6 : 0, paddingTop: total ? 10 : 5 }}>
       <span>{label}</span>
@@ -131,7 +132,7 @@ function Step2({ data }: { data: FormData }) {
       <StaticRouteMap origin={data.origin} dest={data.dest} height={240} />
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 0 }}>
         <div className="section-title" style={{ marginBottom: 12 }}>Detalles de ruta</div>
-        {[['Distancia estimada', dist], ['Tiempo de tránsito', time], ['Peajes estimados', '$350 USD'], ['Complejidad', 'Baja']].map(([l, v]) => (
+        {[['Distancia estimada', dist], ['Tiempo de tránsito', time], ['Peajes estimados', '$350 MXN'], ['Complejidad', 'Baja']].map(([l, v]) => (
           <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 14 }}>
             <span style={{ color: 'var(--text-muted)' }}>{l}</span>
             <span style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{v}</span>
@@ -148,7 +149,7 @@ function Step3({ data, set, errors }: { data: FormData; set: (k: keyof FormData,
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 20 }}>Información aduanal</h2>
       <Field label="¿Requiere gestión aduanal?" required>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-          <Checkbox radio checked={data.customs === 'yes'} onChange={() => set('customs', 'yes')} label="Sí (+ $2,500 USD)" />
+          <Checkbox radio checked={data.customs === 'yes'} onChange={() => set('customs', 'yes')} label="Sí (+ $2,500 MXN)" />
           <Checkbox radio checked={data.customs === 'no'} onChange={() => set('customs', 'no')} label="No" />
         </div>
       </Field>
@@ -202,7 +203,7 @@ function Step4({ data, price, set }: { data: FormData; price: ReturnType<typeof 
             <PriceRow label="TOTAL" value={price.total} total />
             <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--blue-50)', borderRadius: 8, fontSize: 12.5, color: 'var(--primary)', display: 'flex', gap: 6 }}>
               <Icon name="info" size={14} />
-              Horas de carga gratis: 8 h · Después: $40 USD/hora adicional
+              Horas de carga gratis: 8 h · Después: $40 MXN/hora adicional
             </div>
           </div>
           <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-faint)' }}>

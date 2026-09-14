@@ -8,7 +8,7 @@ import { Toggle } from '../components/ui/Input'
 import { MexicoMap } from '../components/shared/MexicoMap'
 import { Spinner } from '../components/ui/Misc'
 import { getShipment, type DbShipment } from '../lib/db'
-import { fmtUSD } from '../data/mockData'
+import { fmtMXN } from '../data/mockData'
 import type { Route, NavParams } from '../types'
 
 interface Props {
@@ -216,17 +216,17 @@ export function RastreoPage({ navigate, params, toast }: Props) {
             <div className="section-title" style={{ marginBottom: 14 }}>Estado de pago</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Total del envío</span>
-              <span className="mono tnum" style={{ fontWeight: 700, color: 'var(--text-strong)' }}>{fmtUSD(shipment.price)}</span>
+              <span className="mono tnum" style={{ fontWeight: 700, color: 'var(--text-strong)' }}>{fmtMXN(shipment.price)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Pagado</span>
-              <span className="mono tnum" style={{ fontWeight: 600, color: 'var(--green-600)' }}>{fmtUSD(shipment.paid)}</span>
+              <span className="mono tnum" style={{ fontWeight: 600, color: 'var(--green-600)' }}>{fmtMXN(shipment.paid)}</span>
             </div>
             <div style={{ height: 6, background: 'var(--gray-100)', borderRadius: 999 }}>
               <div style={{ height: 6, background: 'var(--green-500)', borderRadius: 999, width: `${shipment.price > 0 ? (shipment.paid / shipment.price) * 100 : 0}%` }} />
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 6 }}>
-              Restante: {fmtUSD(remaining)}
+              Restante: {fmtMXN(remaining)}
             </div>
             {(shipment.status === 'waiting' || remaining > 0) && (
               <Button variant="success" icon="dollar" block style={{ marginTop: 14 }} onClick={() => navigate('pago', { id: shipment.ref_id })}>

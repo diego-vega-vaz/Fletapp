@@ -7,7 +7,7 @@ import { StaticRouteMap } from '../components/shared/MexicoMap'
 import { DocumentsManager } from '../components/shared/DocumentsManager'
 import { Spinner } from '../components/ui/Misc'
 import { getShipment, type DbShipment } from '../lib/db'
-import { fmtUSD } from '../data/mockData'
+import { fmtMXN } from '../data/mockData'
 import type { Route, NavParams } from '../types'
 
 interface Props {
@@ -151,11 +151,11 @@ export function DetalleEnvioPage({ navigate, params, toast }: Props) {
           <Card>
             <div className="section-title" style={{ marginBottom: 14 }}>Desglose de costo</div>
             {[
-              ['Flete base', fmtUSD(shipment.price * 0.72)],
-              ['Combustible (10%)', fmtUSD(shipment.price * 0.10)],
-              ['Seguro de carga (5%)', fmtUSD(shipment.price * 0.05)],
-              ['Casetas', fmtUSD(shipment.price * 0.08)],
-              ['Otros', fmtUSD(shipment.price * 0.05)],
+              ['Flete base', fmtMXN(shipment.price * 0.72)],
+              ['Combustible (10%)', fmtMXN(shipment.price * 0.10)],
+              ['Seguro de carga (5%)', fmtMXN(shipment.price * 0.05)],
+              ['Casetas', fmtMXN(shipment.price * 0.08)],
+              ['Otros', fmtMXN(shipment.price * 0.05)],
             ].map(([l, v]) => (
               <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 13.5 }}>
                 <span style={{ color: 'var(--text-muted)' }}>{l}</span>
@@ -164,7 +164,7 @@ export function DetalleEnvioPage({ navigate, params, toast }: Props) {
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 4px', fontSize: 16, fontWeight: 750, color: 'var(--text-strong)' }}>
               <span>Total</span>
-              <span className="mono tnum">{fmtUSD(shipment.price)}</span>
+              <span className="mono tnum">{fmtMXN(shipment.price)}</span>
             </div>
           </Card>
 
@@ -173,11 +173,11 @@ export function DetalleEnvioPage({ navigate, params, toast }: Props) {
             <div className="section-title" style={{ marginBottom: 14 }}>Estado de pago</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Pagado</span>
-              <span className="mono tnum" style={{ fontWeight: 600, color: 'var(--green-600)' }}>{fmtUSD(shipment.paid)}</span>
+              <span className="mono tnum" style={{ fontWeight: 600, color: 'var(--green-600)' }}>{fmtMXN(shipment.paid)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>Restante</span>
-              <span className="mono tnum" style={{ fontWeight: 600, color: remaining > 0 ? 'var(--orange-600)' : 'var(--text-muted)' }}>{fmtUSD(remaining)}</span>
+              <span className="mono tnum" style={{ fontWeight: 600, color: remaining > 0 ? 'var(--orange-600)' : 'var(--text-muted)' }}>{fmtMXN(remaining)}</span>
             </div>
             <div style={{ height: 6, background: 'var(--gray-100)', borderRadius: 999 }}>
               <div style={{ height: 6, background: 'var(--green-500)', borderRadius: 999, width: `${shipment.price > 0 ? (shipment.paid / shipment.price) * 100 : 0}%`, transition: 'width 0.5s' }} />
