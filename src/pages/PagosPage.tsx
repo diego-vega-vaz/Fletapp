@@ -6,7 +6,7 @@ import { Checkbox } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { Spinner } from '../components/ui/Misc'
 import { getShipment, getInvoiceByRef, getShipmentById, recordPayment, type DbShipment } from '../lib/db'
-import { fmtUSD } from '../data/mockData'
+import { fmtMXN } from '../data/mockData'
 import type { Route, NavParams } from '../types'
 
 interface Props {
@@ -115,8 +115,8 @@ export function PagosPage({ navigate, params, toast }: Props) {
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Total del envío</div>
-            <div className="mono tnum" style={{ fontSize: 20, fontWeight: 750, color: 'var(--text-strong)' }}>{fmtUSD(shipment.price)}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--green-600)', marginTop: 2 }}>Pagado: {fmtUSD(shipment.paid)}</div>
+            <div className="mono tnum" style={{ fontSize: 20, fontWeight: 750, color: 'var(--text-strong)' }}>{fmtMXN(shipment.price)} MXN</div>
+            <div style={{ fontSize: 12.5, color: 'var(--green-600)', marginTop: 2 }}>Pagado: {fmtMXN(shipment.paid)}</div>
           </div>
         </div>
       </Card>
@@ -126,12 +126,12 @@ export function PagosPage({ navigate, params, toast }: Props) {
         {[['Subtotal (saldo restante)', remaining], ['IVA (16%)', iva]].map(([l, v]) => (
           <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 14 }}>
             <span style={{ color: 'var(--text-muted)' }}>{l}</span>
-            <span className="mono tnum" style={{ fontWeight: 600 }}>{fmtUSD(v as number)}</span>
+            <span className="mono tnum" style={{ fontWeight: 600 }}>{fmtMXN(v as number)}</span>
           </div>
         ))}
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', fontSize: 17, fontWeight: 750, color: 'var(--text-strong)' }}>
           <span>TOTAL A PAGAR AHORA</span>
-          <span className="mono tnum" style={{ color: 'var(--primary)' }}>{fmtUSD(total)}</span>
+          <span className="mono tnum" style={{ color: 'var(--primary)' }}>{fmtMXN(total)} MXN</span>
         </div>
       </Card>
 
@@ -141,7 +141,7 @@ export function PagosPage({ navigate, params, toast }: Props) {
           {[
             { id: 'card' as const, label: 'Tarjeta de Crédito/Débito', icon: 'card', sub: 'Visa ••••4242' },
             { id: 'transfer' as const, label: 'Transferencia Bancaria', icon: 'building', sub: 'CLABE: 002154007000000 · Banamex' },
-            { id: 'credit' as const, label: 'Crédito FleetApp', icon: 'zap', sub: 'Disponible: $5,000 USD' },
+            { id: 'credit' as const, label: 'Crédito FleetApp', icon: 'zap', sub: 'Disponible: $5,000 MXN' },
           ].map(m => (
             <div
               key={m.id}
@@ -186,7 +186,7 @@ export function PagosPage({ navigate, params, toast }: Props) {
       <div style={{ display: 'flex', gap: 12 }}>
         <Button variant="secondary" onClick={() => navigate('pagos')} style={{ flex: 0 }}>Cancelar</Button>
         <Button variant="success" icon="shield" block loading={processing} onClick={confirm} style={{ flex: 1, fontSize: 15 }}>
-          {processing ? 'Procesando…' : `Confirmar pago ${fmtUSD(total)}`}
+          {processing ? 'Procesando…' : `Confirmar pago ${fmtMXN(total)}`}
         </Button>
       </div>
       <div style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--text-faint)', marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -200,7 +200,7 @@ export function PagosPage({ navigate, params, toast }: Props) {
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 750, color: 'var(--text-strong)', marginBottom: 6 }}>¡Pago confirmado!</h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>Tu envío ha sido marcado como entregado.</p>
-          {[['Transacción', txRef], ['Monto', fmtUSD(total)], ['Método', methodLabel], ['Envío', shipment.ref_id]].map(([l, v]) => (
+          {[['Transacción', txRef], ['Monto', fmtMXN(total)], ['Método', methodLabel], ['Envío', shipment.ref_id]].map(([l, v]) => (
             <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 14 }}>
               <span style={{ color: 'var(--text-faint)' }}>{l}</span>
               <span className="mono" style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{v}</span>
