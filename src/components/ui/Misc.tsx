@@ -41,7 +41,7 @@ interface PriceRowProps {
 }
 
 export function PriceRow({ label, value, fmt, highlight, total }: PriceRowProps) {
-  const display = fmt ? fmt(value) : `${value.toLocaleString('es-MX')}`
+  const display = fmt ? fmt(value) : `$${value.toLocaleString('es-MX')}`
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: total ? 15 : 13.5, fontWeight: total ? 750 : 500, color: total || highlight ? 'var(--text-strong)' : 'var(--text-muted)', borderTop: total ? '1px solid var(--border-soft)' : undefined, marginTop: total ? 4 : 0 }}>
       <span>{label}</span>
