@@ -7,7 +7,7 @@ import { Spinner } from '../components/ui/Misc'
 import { BarChart, DonutChart, RankBars } from '../components/ui/Charts'
 import { getShipments, getInvoices, getQuotes, type DbShipment, type DbInvoice, type DbQuote } from '../lib/db'
 import { exportToCsv } from '../lib/export'
-import { fmtUSD } from '../data/mockData'
+import { fmtMXN } from '../data/mockData'
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
@@ -158,15 +158,15 @@ export function ReportesPage() {
       ) : (
         <>
           <div className="kpi-grid" style={{ marginBottom: 22 }}>
-            <KpiCard icon="dollar" bg="var(--blue-50)" color="var(--primary)" value={fmtUSD(totalRevenue)} label="Facturación total" sub={`${shipments.length} envíos`} />
-            <KpiCard icon="checkCircle" bg="var(--green-50)" color="var(--green-600)" value={fmtUSD(collected)} label="Cobrado" sub={`${invoices.filter(i => i.status === 'paid').length} facturas pagadas`} />
-            <KpiCard icon="clock" bg="var(--orange-50)" color="var(--orange-600)" value={fmtUSD(pendingAmount)} label="Por cobrar" sub={`${invoices.filter(i => i.status !== 'paid').length} pendientes`} />
+            <KpiCard icon="dollar" bg="var(--blue-50)" color="var(--primary)" value={fmtMXN(totalRevenue)} label="Facturación total" sub={`${shipments.length} envíos`} />
+            <KpiCard icon="checkCircle" bg="var(--green-50)" color="var(--green-600)" value={fmtMXN(collected)} label="Cobrado" sub={`${invoices.filter(i => i.status === 'paid').length} facturas pagadas`} />
+            <KpiCard icon="clock" bg="var(--orange-50)" color="var(--orange-600)" value={fmtMXN(pendingAmount)} label="Por cobrar" sub={`${invoices.filter(i => i.status !== 'paid').length} pendientes`} />
             <KpiCard icon="trendingUp" bg="var(--cyan-50)" color="var(--cyan-500)" value={`${conversion}%`} label="Conversión cotizaciones" sub={`${acceptedQuotes} de ${quotes.length} aceptadas`} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 18, alignItems: 'start', marginBottom: 18 }} className="dash-cols">
             <SectionCard title="Facturación por mes" sub={`Últimos ${months} meses`}>
-              <BarChart data={monthly.map(m => ({ label: m.label, value: m.revenue, highlight: m.highlight }))} color="var(--primary)" format={v => fmtUSD(v)} />
+              <BarChart data={monthly.map(m => ({ label: m.label, value: m.revenue, highlight: m.highlight }))} color="var(--primary)" format={v => fmtMXN(v)} />
             </SectionCard>
             <SectionCard title="Envíos por estado" sub={`${shipments.length} envíos en total`}>
               <DonutChart segments={byStatus} centerLabel={String(shipments.length)} centerSub="envíos" />
