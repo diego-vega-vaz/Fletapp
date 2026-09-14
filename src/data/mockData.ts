@@ -60,4 +60,7 @@ export const TICKET: Ticket = {
   files: [{ name: 'captura-tarjeta.jpg', meta: 'hace 2 min', icon: 'fileText' }, { name: 'email-banco.pdf', meta: 'hace 1 hora', icon: 'fileText' }],
 }
 
-export const fmtUSD = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })
+// Formateador de dinero unico de la app. Todo en FletApp se cobra en PESOS MEXICANOS.
+// Si algun dia hay otra moneda, se agrega un parametro aqui, no una funcion paralela.
+export const fmtMXN = (n: number) => '
+ + n.toLocaleString('es-MX', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })
