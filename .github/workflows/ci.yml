@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tipos
+        run: npx tsc -b
+
+      - name: Compilar
+        run: npx vite build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      # Corre sobre el bundle compilado, no sobre el codigo fuente, para que
+      # cubra tambien las pantallas que estan detras del login.
+      - name: Guardia de honestidad
+        run: node scripts/verificar-verdad.mjs
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas
+        run: npx playwright test
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}

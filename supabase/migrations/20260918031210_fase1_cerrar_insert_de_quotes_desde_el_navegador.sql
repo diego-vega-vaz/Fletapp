@@ -1,0 +1,11 @@
+-- Ultimo hueco de escritura del navegador.
+--
+-- Se aplica ahora y no antes porque habia que esperar a que el frontend nuevo
+-- estuviera en produccion. Verificado sobre el bundle desplegado
+-- (index-DX2OYe3B.js): invoca la Edge Function cotizar y ya no trae la
+-- formula del precio. Si esto se aplicaba antes, el cotizador se rompia para
+-- todos.
+--
+-- A partir de aqui la unica via para crear una cotizacion es la funcion
+-- cotizar, que escribe con service role.
+drop policy if exists "quotes: crear las propias" on public.quotes;

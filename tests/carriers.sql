@@ -93,9 +93,11 @@ begin
 
   perform set_config('request.jwt.claims','{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
   set local role authenticated;
-  select count(*) into n from public.carriers;
+  -- Acotado al transportista de esta prueba: contar todos asume base vacia,
+  -- y el dia que haya transportistas reales la prueba fallaria por nada.
+  select count(*) into n from public.carriers where id = cid;
   reset role;
-  insert into r values ('embarcador ve transportistas','0', n::text, n = 0);
+  insert into r values ('embarcador ve el transportista','0', n::text, n = 0);
 
   perform set_config('request.jwt.claims','{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
   set local role authenticated;
