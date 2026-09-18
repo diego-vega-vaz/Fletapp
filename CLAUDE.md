@@ -124,3 +124,41 @@ operando, 3 a 5 embarcadores que repitieron, comisión efectivamente ingresada
 y facturas timbradas de verdad.
 
 **No "la plataforma terminada".**
+
+## Dónde corre cada cosa (18 sep 2026)
+
+Hay tres entornos y confundirlos cuesta horas. Esto es lo que funciona y lo
+que no, medido, no supuesto.
+
+**La VM de escritorio de Cowork** (`device_bash`, carpeta montada en
+`~/mnt/Fletapp`): sirve para editar archivos, leer, `git status`, `git diff`,
+`git commit` y correr scripts de Node sueltos.
+
+- `vite build` **truena con "Bus error"** ahí. Reproducible, también
+  escribiendo fuera de la carpeta montada: el binario nativo de rolldown no
+  corre en esa VM. `tsc` sí pasa.
+- `npm install` tarda más de los 180 s que dura una llamada, y si se corta a
+  medias **deja `node_modules` corrupto** (a `lucide-react` le faltaron sus
+  `.d.ts` y `tsc` se quejó de algo que no era un error de código). Si pasa:
+  `rm -rf node_modules/<paquete>` y reinstalar ese paquete solo.
+- Cada llamada es un sandbox nuevo: **no hay procesos en segundo plano** entre
+  llamadas, `nohup` no sirve.
+- Borrar archivos requiere permiso explícito del usuario una vez por sesión.
+- **No tiene credenciales de git.** `git push` falla con "could not read
+  Username". Empujar es del lado de Diego, en Windows.
+
+**El contenedor de la nube** (la sesión de Cowork): ahí sí compila, prueba y
+saca capturas. Chromium viene instalado. El ciclo probado:
+
+```bash
+bash scripts/empaquetar-fuente.sh     # en la VM, genera fuente.tar.gz (~1.6 MB)
+# subir el tar, desempacar en la nube, npx tsc -b && npx vite build
+# node scripts/verificar-verdad.mjs && npx playwright test
+```
+
+**Windows, con Claude Code**: el único lugar con `npm run dev` de verdad, las
+credenciales de git y sin límite de tiempo por comando. Ahí va el ciclo de
+desarrollo largo y el `git push`.
+
+Regla corta: **la base de datos y la verificación, en la nube; los archivos y
+el git, en la VM; correr la app y empujar, en Windows.**
