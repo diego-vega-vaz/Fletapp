@@ -20,7 +20,9 @@ import { SoportePage } from './pages/SoportePage'
 import { TicketDetailPage } from './pages/TicketDetailPage'
 import { ConfigPage } from './pages/ConfigPage'
 import { ReportesPage } from './pages/ReportesPage'
+import { OperacionPage } from './pages/OperacionPage'
 import { getProfile } from './lib/db'
+import { esOperador as consultarRol } from './lib/roles'
 import type { Plan } from './data/plans'
 import type { Route, NavParams, User, PublicRoute } from './types'
 
@@ -34,6 +36,7 @@ const [route, setRoute] = useState<Route>('dashboard')
 const [params, setParams] = useState<NavParams | null>(null)
 const [user, setUser] = useState<User>({ name: '', company: '', email: '' })
 const [plan, setPlan] = useState<string | null>('free')
+const [operador, setOperador] = useState(false)
 const [toasts, setToasts] = useState<Toast[]>([])
 
 useEffect(() => {
@@ -63,6 +66,7 @@ email: u.email || '',
 setAuthed(true)
 } else {
 setAuthed(false)
+setOperador(false)
 }
 })
 
@@ -73,6 +77,17 @@ return () => subscription.unsubscribe()
 useEffect(() => {
 if (!authed) return
 getProfile().then(p => { if (p?.plan) setPlan(p.plan) }).catch(() => {})
+}, [authed])
+
+// El rol decide si aparece la consola de operacion. Si la consulta falla se
+// asume que NO es operador: ante la duda, menos permisos.
+useEffect(() => {
+if (!authed) return
+let vivo = true
+consultarRol()
+.then(r => { if (vivo) setOperador(r) })
+.catch(() => { if (vivo) setOperador(false) })
+return () => { vivo = false }
 }, [authed])
 
 const navigate = useCallback((r: Route, p: NavParams | null = null) => {
@@ -90,6 +105,7 @@ setTimeout(() => setToasts(ts => ts.filter(x => x.id !== id)), 4000)
 const logout = async () => {
 await supabase.auth.signOut()
 setAuthed(false)
+setOperador(false)
 setRoute('dashboard')
 }
 
@@ -137,13 +153,16 @@ case 'ticket': return <TicketDetailPage navigate={navigate} toast={toast} params
 case 'planes': return <PlanesPage currentPlan={plan} onSelect={onSelectPlan} inApp />
 case 'config': return <ConfigPage user={user} />
 case 'reportes': return <ReportesPage />
+case 'operacion': return operador
+? <OperacionPage toast={toast} />
+: <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
 default: return <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
 }
 })()
 
 return (
 <>
-<AppShell route={route} navigate={navigate} user={user} onLogout={logout} onNew={() => navigate('cotizacion')}>
+<AppShell route={route} navigate={navigate} user={user} onLogout={logout} onNew={() => navigate('cotizacion')} esOperador={operador}>
 {page}
 </AppShell>
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
@@ -7,7 +7,7 @@ import { Steps } from '../components/ui/Steps'
 import { StaticRouteMap } from '../components/shared/MexicoMap'
 import { fmtMXN } from '../data/mockData'
 import { PLANS, planById } from '../data/plans'
-import { createQuote } from '../lib/db'
+import { cotizar, type DesglosePrecio } from '../lib/db'
 import type { Route, NavParams } from '../types'
 
 const CITY_CODE: Record<string, string> = {
@@ -177,7 +177,7 @@ function Step3({ data, set, errors }: { data: FormData; set: (k: keyof FormData,
   )
 }
 
-function Step4({ data, price, set }: { data: FormData; price: ReturnType<typeof calcPrice>; set: (k: keyof FormData, v: any) => void }) {
+function Step4({ data, price, precioError, set }: { data: FormData; price: DesglosePrecio | null; precioError: string; set: (k: keyof FormData, v: any) => void }) {
   return (
     <Card>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 20 }}>Resumen de cotización</h2>
@@ -194,6 +194,17 @@ function Step4({ data, price, set }: { data: FormData; price: ReturnType<typeof 
         <div>
           <div className="section-title" style={{ fontSize: 14, marginBottom: 10 }}>Desglose de precio</div>
           <div style={{ background: 'var(--gray-50)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--border-soft)' }}>
+            {precioError ? (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--red-500)' }}>
+                <Icon name="alertCircle" size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>{precioError}</span>
+              </div>
+            ) : !price ? (
+              <div style={{ fontSize: 13.5, color: 'var(--text-faint)', padding: '10px 0' }}>
+                Calculando el precio…
+              </div>
+            ) : (
+            <>
             <PriceRow label={`Tarifa base (${data.containers} cont.)`} value={price.base} />
             <PriceRow label="Peajes" value={price.tolls} />
             {price.special > 0 && <PriceRow label="Manejo especial" value={price.special} />}
@@ -201,6 +212,8 @@ function Step4({ data, price, set }: { data: FormData; price: ReturnType<typeof 
             {price.customs > 0 && <PriceRow label="Aduanas" value={price.customs} />}
             <PriceRow label={`IVA (16%)`} value={price.iva} />
             <PriceRow label="TOTAL" value={price.total} total />
+            </>
+            )}
             <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--blue-50)', borderRadius: 8, fontSize: 12.5, color: 'var(--primary)', display: 'flex', gap: 6 }}>
               <Icon name="info" size={14} />
               Horas de carga gratis: 8 h · Después: $40 MXN/hora adicional
@@ -218,18 +231,15 @@ function Step4({ data, price, set }: { data: FormData; price: ReturnType<typeof 
   )
 }
 
-function calcPrice(data: FormData) {
-  const base = data.containers * 1600
-  const tolls = 350
-  let special = 0
-  if (data.special.frozen) special += 800
-  if (data.special.hazard) special += 1200
-  if (data.special.oog) special += 950
-  const customs = data.customs === 'yes' ? 2500 : 0
-  const subtotal = base + tolls + special
-  const iva = Math.round((subtotal + customs) * 0.16)
-  return { base, tolls, special, customs, subtotal, iva, total: subtotal + customs + iva }
-}
+// El precio ya NO se calcula aqui.
+//
+// Vivia en este archivo, en el navegador, y viajaba dentro del insert: quien
+// abriera la consola podia cotizar un flete en $1. Ahora lo calcula la Edge
+// Function 'cotizar' y esta pantalla solo muestra lo que el servidor devuelve.
+//
+// Si te dan ganas de volver a poner la formula aqui "nada mas para la vista
+// previa", no lo hagas: en cuanto hay dos formulas se separan, y la que ve el
+// cliente deja de ser la que se cobra.
 
 interface Props {
   navigate: (r: Route, p?: NavParams | null) => void
@@ -246,8 +256,36 @@ export function CotizacionPage({ navigate, toast }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const set = (k: keyof FormData, v: any) => setData(d => ({ ...d, [k]: v }))
-  const price = useMemo(() => calcPrice(data), [data])
+  const [price, setPrice] = useState<DesglosePrecio | null>(null)
+  const [precioError, setPrecioError] = useState('')
   const steps = ['Detalles', 'Ruta', 'Aduanas', 'Resumen']
+
+  const payload = () => ({
+    origin: data.origin,
+    origin_code: CITY_CODE[data.origin] ?? data.origin.slice(0, 4).toUpperCase(),
+    dest: data.dest,
+    dest_code: CITY_CODE[data.dest] ?? data.dest.slice(0, 4).toUpperCase(),
+    cargo_type: data.cargoType,
+    containers: String(data.containers),
+    weight: data.weight,
+    cargo_desc: data.description,
+    special: data.special,
+    customs: data.customs,
+    operation: data.operation,
+  })
+
+  // Al llegar al resumen se le pide el precio al servidor. Una sola llamada,
+  // en el momento en que el precio importa.
+  useEffect(() => {
+    if (step !== 3) return
+    let cancelado = false
+    setPrice(null); setPrecioError('')
+    cotizar(payload(), { preview: true })
+      .then(r => { if (!cancelado) setPrice(r.desglose) })
+      .catch(e => { if (!cancelado) setPrecioError(e.message) })
+    return () => { cancelado = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, data])
 
   const validate = () => {
     const e: Record<string, string> = {}
@@ -269,24 +307,11 @@ export function CotizacionPage({ navigate, toast }: Props) {
     if (!data.terms) { toast({ type: 'warning', title: 'Acepta los términos para continuar' }); return }
     setSubmitting(true)
     try {
-      const q = await createQuote({
-        origin: data.origin,
-        origin_code: CITY_CODE[data.origin] ?? data.origin.slice(0, 4).toUpperCase(),
-        dest: data.dest,
-        dest_code: CITY_CODE[data.dest] ?? data.dest.slice(0, 4).toUpperCase(),
-        cargo_type: data.cargoType,
-        containers: String(data.containers),
-        weight: data.weight,
-        cargo_desc: data.description,
-        special: data.special,
-        customs: data.customs,
-        operation: data.operation,
-        price: price.total,
-      })
-      toast({ type: 'success', title: 'Cotización enviada', msg: `${q.ref_id} creada · revísala en Cotizaciones` })
+      const { quote } = await cotizar(payload())
+      toast({ type: 'success', title: 'Cotización enviada', msg: `${quote?.ref_id} creada · revísala en Cotizaciones` })
       setTimeout(() => navigate('cotizaciones'), 900)
-    } catch {
-      toast({ type: 'error', title: 'Error al crear cotización' })
+    } catch (e) {
+      toast({ type: 'error', title: 'Error al crear cotización', msg: (e as Error).message })
     } finally {
       setSubmitting(false)
     }
@@ -306,7 +331,7 @@ export function CotizacionPage({ navigate, toast }: Props) {
           {step === 0 && <Step1 data={data} set={set} errors={errors} />}
           {step === 1 && <Step2 data={data} />}
           {step === 2 && <Step3 data={data} set={set} errors={errors} />}
-          {step === 3 && <Step4 data={data} price={price} set={set} />}
+          {step === 3 && <Step4 data={data} price={price} precioError={precioError} set={set} />}
         </div>
       </div>
 

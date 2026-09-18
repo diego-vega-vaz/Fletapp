@@ -23,3 +23,14 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Paquete de fuente para verificar en la nube (scripts/empaquetar-fuente.sh)
+fuente.tar.gz
+# Salidas de Claude, no son parte del proyecto
+Claude outputs/

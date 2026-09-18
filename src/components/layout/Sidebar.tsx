@@ -26,6 +26,9 @@ const NAV: NavItem[] = [
 ]
 
 interface SidebarProps {
+  /** Solo el operador ve la consola. La RLS ya lo bloquea en la base;
+   *  esconder el item es cortesia, no seguridad. */
+  esOperador?: boolean
   route: Route
   navigate: (r: Route) => void
   collapsed: boolean
@@ -33,7 +36,10 @@ interface SidebarProps {
   user: User
 }
 
-export function Sidebar({ route, navigate, collapsed, setCollapsed, user }: SidebarProps) {
+export function Sidebar({ route, navigate, collapsed, setCollapsed, user, esOperador }: SidebarProps) {
+  const items = esOperador
+    ? [{ section: 'Operacion' }, { id: 'operacion', label: 'Consola', icon: 'truck' }, ...NAV]
+    : NAV
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-top">
@@ -42,7 +48,7 @@ export function Sidebar({ route, navigate, collapsed, setCollapsed, user }: Side
       </div>
 
       <nav className="nav">
-        {NAV.map((item, i) =>
+        {items.map((item, i) =>
           item.section ? (
             <div key={i} className="nav-section">{item.section}</div>
           ) : (

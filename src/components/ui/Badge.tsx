@@ -9,7 +9,10 @@ export const STATUS_CONFIG = {
   disputed:  { label: 'Disputa',        color: 'var(--st-disputed)',  bg: 'var(--red-50)',    icon: 'alertCircle' },
   paid:      { label: 'Pagado',         color: 'var(--st-paid)',      bg: 'var(--gray-100)',  icon: 'check' },
   delayed:   { label: 'Retrasado',      color: 'var(--red-500)',      bg: 'var(--red-50)',    icon: 'alertCircle' },
-  waiting:   { label: 'Esperando pago', color: 'var(--orange-500)',   bg: 'var(--orange-50)', icon: 'clock' },
+  // 'waiting' ya no quiere decir "falta que pague": con el flujo nuevo un
+  // envio nace en waiting porque todavia no tiene camion asignado.
+  waiting:   { label: 'Por asignar',    color: 'var(--orange-500)',   bg: 'var(--orange-50)', icon: 'clock' },
+  cancelled: { label: 'Cancelado',      color: 'var(--text-faint)',   bg: 'var(--gray-100)',  icon: 'xCircle' },
 } as const
 
 interface StatusBadgeProps {

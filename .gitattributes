@@ -1,0 +1,7 @@
+# Normaliza finales de linea. Sin esto, un archivo escrito en Linux y
+# revisado en Windows aparece como "todo el archivo cambio" en el diff.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.svg text eol=lf

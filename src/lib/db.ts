@@ -123,14 +123,45 @@ export const getQuotes = async (): Promise<DbQuote[]> => {
   return data || []
 }
 
-export const createQuote = async (q: {
+/**
+ * Datos de un envio para cotizar. Fijate en lo que NO esta: el precio.
+ * Lo calcula el servidor. Si el navegador manda uno, la funcion lo ignora.
+ */
+export interface DatosCotizacion {
   origin: string; origin_code: string; dest: string; dest_code: string
   cargo_type: string; containers: string; weight: string; cargo_desc: string
-  special: object; customs: string; operation: string; price: number
-}): Promise<DbQuote> => {
-  const { data, error } = await supabase
-    .from('quotes').insert(q).select().single()
-  if (error) throw error
+  special: object; customs: string; operation: string
+}
+
+export interface DesglosePrecio {
+  base: number; tolls: number; special: number; customs: number
+  subtotal: number; iva: number; total: number
+  formula_version: string; moneda: string
+}
+
+/**
+ * Llama a la Edge Function 'cotizar'.
+ *
+ * Con preview=true solo devuelve el desglose, sin crear nada: es lo que usa
+ * la pantalla de resumen para mostrar el precio.
+ * Sin preview crea la cotizacion y devuelve la fila.
+ *
+ * El precio SIEMPRE viene del servidor. Este archivo no sabe calcularlo, y
+ * asi debe seguir.
+ */
+export const cotizar = async (
+  datos: DatosCotizacion,
+  opciones?: { preview?: boolean },
+): Promise<{ quote?: DbQuote; desglose: DesglosePrecio }> => {
+  const { data, error } = await supabase.functions.invoke('cotizar', {
+    body: { ...datos, preview: opciones?.preview === true },
+  })
+  if (error) {
+    // El cuerpo del error trae el mensaje util que manda la funcion.
+    let detalle = ''
+    try { detalle = (await error.context?.json())?.error ?? '' } catch { /* sin detalle */ }
+    throw new Error(detalle || 'No se pudo cotizar. Intenta de nuevo.')
+  }
   return data
 }
 

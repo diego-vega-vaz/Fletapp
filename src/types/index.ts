@@ -1,4 +1,4 @@
-export type ShipmentStatus = 'transit' | 'delivered' | 'waiting' | 'pending' | 'disputed' | 'paid' | 'delayed'
+export type ShipmentStatus = 'transit' | 'delivered' | 'waiting' | 'pending' | 'disputed' | 'paid' | 'delayed' | 'cancelled'
 export type InvoiceStatus = 'paid' | 'pending' | 'overdue'
 
 export interface Shipment {
@@ -82,6 +82,7 @@ export type Route =
   | 'dashboard' | 'cotizacion' | 'rastreo' | 'detalle'
   | 'pago' | 'pagos' | 'cotizaciones' | 'envios'
   | 'soporte' | 'ticket' | 'config' | 'planes' | 'reportes'
+  | 'operacion'
 
 export type PublicRoute = 'landing' | 'login' | 'register' | 'planes' | 'terminos' | 'privacidad'
 
