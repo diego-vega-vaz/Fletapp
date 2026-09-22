@@ -41,6 +41,12 @@ const PROHIBIDO = [
     porque: 'No hay pasarela ni PAC.' },
   { patron: 'Pagos protegidos',
     porque: 'No hay pasarela de pago. Nada esta protegido todavia.' },
+  { patron: 'tiempo real',
+    porque: 'No hay rastreo en vivo. Quique lo dejo para despues el 15 sep; el avance de un envio lo reporta el operador a mano y queda en shipment_events. Prometer tiempo real es lo mismo que el CFDI falso.' },
+  { patron: 'Cobros protegidos',
+    porque: 'No hay pasarela. Nada esta protegido todavia.' },
+  { patron: 'menores a 2 horas',
+    porque: 'SLA de soporte que nadie se comprometio a cumplir y no hay quien lo mida.' },
   { patron: '*1600',
     porque: 'La tarifa por contenedor volvio al navegador. El precio lo calcula la Edge Function cotizar; si la formula viaja al cliente, el cliente la puede cambiar.' },
 ]

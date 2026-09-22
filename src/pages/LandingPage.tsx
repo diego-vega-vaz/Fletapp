@@ -9,11 +9,11 @@ interface Props {
 
 const FEATURES = [
   { icon: 'zap', name: 'Cotiza al instante', desc: 'Tarifas de flete terrestre en minutos, con desglose claro de costos, peajes e IVA.' },
-  { icon: 'mapPin', name: 'Rastreo en tiempo real', desc: 'Sigue tu carga en el mapa, con ETA y notificaciones en cada etapa del recorrido.' },
+  { icon: 'mapPin', name: 'Estatus paso a paso', desc: 'Cada movimiento del envio queda registrado con fecha, lugar y quien lo reporto. Rastreo por GPS en camino.' },
   { icon: 'fileText', name: 'Comprobantes por envío', desc: 'Cada envío genera su comprobante de cobro con desglose. Facturación CFDI 4.0 en integración.' },
-  { icon: 'shield', name: 'Pagos seguros', desc: 'Cobros protegidos, anticipos y saldos liberados solo al confirmar la entrega.' },
+  { icon: 'shield', name: 'Anticipo y liquidacion', desc: 'El anticipo se cobra cuando hay transportista y placas confirmadas. Cobro en linea en integracion.' },
   { icon: 'package', name: 'Gestión de documentos', desc: 'Sube y organiza cartas porte, facturas y comprobantes por cada envío.' },
-  { icon: 'chat', name: 'Soporte cuando lo necesitas', desc: 'Tickets y chat con tiempos de respuesta menores a 2 horas.' },
+  { icon: 'chat', name: 'Soporte cuando lo necesitas', desc: 'Levanta un ticket y queda registrado, con historial de la conversacion por envio.' },
 ]
 
 const STEPS = [

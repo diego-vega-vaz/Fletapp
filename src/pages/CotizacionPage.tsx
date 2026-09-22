@@ -208,8 +208,8 @@ function Step4({ data, price, precioError, set }: { data: FormData; price: Desgl
             <PriceRow label={`Tarifa base (${data.containers} cont.)`} value={price.base} />
             <PriceRow label="Peajes" value={price.tolls} />
             {price.special > 0 && <PriceRow label="Manejo especial" value={price.special} />}
-            <PriceRow label="Subtotal" value={price.subtotal} />
             {price.customs > 0 && <PriceRow label="Aduanas" value={price.customs} />}
+            <PriceRow label="Subtotal" value={price.subtotal} />
             <PriceRow label={`IVA (16%)`} value={price.iva} />
             <PriceRow label="TOTAL" value={price.total} total />
             </>

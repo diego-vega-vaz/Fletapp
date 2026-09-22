@@ -6,16 +6,18 @@ import {
 // La aritmetica del dinero es lo unico de este proyecto que no se puede
 // revisar a ojo. Estas pruebas corren sin red y sin base de datos.
 
-test('el desglose cuadra: subtotal + aduanas + IVA = total', () => {
+test('el desglose cuadra: subtotal + IVA = total, y subtotal incluye aduanas', () => {
   const d = calcularPrecio({ containers: 2, special: { frozen: true }, customs: 'yes' })
   expect(d.base).toBe(3200)          // 2 x 1600
   expect(d.tolls).toBe(350)
   expect(d.special).toBe(800)        // refrigerado
   expect(d.customs).toBe(2500)
-  expect(d.subtotal).toBe(4350)      // base + casetas + especial
-  expect(d.iva).toBe(1096)           // 16% de (4350 + 2500), redondeado
-  expect(d.total).toBe(d.subtotal + d.customs + d.iva)
-  expect(d.total).toBe(7946)
+  // subtotal es la base gravable: TODO lo que se cobra antes de IVA.
+  expect(d.subtotal).toBe(6850)      // 3200 + 350 + 800 + 2500
+  expect(d.subtotal).toBe(d.base + d.tolls + d.special + d.customs)
+  expect(d.iva).toBe(1096)           // 16% de 6850, redondeado
+  expect(d.total).toBe(d.subtotal + d.iva)
+  expect(d.total).toBe(7946)         // el total no cambia
   expect(d.moneda).toBe('MXN')
   expect(d.formula_version).toBe(FORMULA_VERSION)
 })

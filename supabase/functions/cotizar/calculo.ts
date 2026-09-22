@@ -33,11 +33,14 @@ export function calcularPrecio(input: {
     if (input.special[clave]) special += RECARGO[clave]
   }
   const customs = input.customs === 'yes' ? ADUANAS : 0
-  const subtotal = base + tolls + special
-  const iva = Math.round((subtotal + customs) * IVA)
+  // subtotal = base gravable, TODO lo que se cobra antes de IVA (aduanas
+  // incluidas). Antes excluia aduanas y el IVA se sacaba aparte: el numero
+  // llamado "subtotal" no era el que iria en una factura.
+  const subtotal = base + tolls + special + customs
+  const iva = Math.round(subtotal * IVA)
   return {
     base, tolls, special, customs, subtotal, iva,
-    total: subtotal + customs + iva,
+    total: subtotal + iva,
     formula_version: FORMULA_VERSION,
     moneda: 'MXN',
   }

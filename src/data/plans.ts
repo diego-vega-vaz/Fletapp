@@ -18,7 +18,7 @@ export const PLANS: Plan[] = [
     tagline: 'Para probar y mover tus primeros envíos',
     cta: 'Empezar gratis',
     features: [
-      'Rastreo de envíos en tiempo real',
+      'Estatus de envios con bitacora',
       'Gestión de documentos (1 GB)',
       'Soporte por correo',
       'Hasta 2 usuarios',

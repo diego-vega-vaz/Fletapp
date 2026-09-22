@@ -134,7 +134,7 @@ export function DashboardPage({ navigate, user, onPay }: Props) {
             <KpiCard icon="fileText" iconBg="var(--blue-50)" iconColor="var(--primary)" value={String(stats?.quotes.length ?? 0)} label="Cotizaciones totales" />
             <KpiCard icon="clock" iconBg="var(--orange-50)" iconColor="var(--orange-600)" value={String(stats?.pending.length ?? 0)} label="Pagos pendientes" />
             <KpiCard icon="dollar" iconBg="var(--green-50)" iconColor="var(--green-600)" value={fmtMXN(stats?.paidAmount ?? 0)} label="Total pagado" />
-            <KpiCard icon="truck" iconBg="var(--cyan-50)" iconColor="var(--cyan-500)" value={String(stats?.active.length ?? 0)} label="Envíos en tránsito" />
+            <KpiCard icon="truck" iconBg="var(--cyan-50)" iconColor="var(--cyan-500)" value={String(stats?.active.length ?? 0)} label="Envíos activos" />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr)', gap: 18, alignItems: 'start' }} className="dash-cols">
