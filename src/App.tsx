@@ -20,7 +20,8 @@ import { SoportePage } from './pages/SoportePage'
 import { TicketDetailPage } from './pages/TicketDetailPage'
 import { ConfigPage } from './pages/ConfigPage'
 import { ReportesPage } from './pages/ReportesPage'
-import { OperacionPage } from './pages/OperacionPage'
+import { OperacionPage } from './pages/OperacionPage'
+import { TransportistasPage } from './pages/TransportistasPage'
 import { getProfile } from './lib/db'
 import { esOperador as consultarRol } from './lib/roles'
 import type { Plan } from './data/plans'
@@ -155,6 +156,9 @@ case 'config': return <ConfigPage user={user} />
 case 'reportes': return <ReportesPage />
 case 'operacion': return operador
 ? <OperacionPage toast={toast} />
+: <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
+case 'transportistas': return operador
+? <TransportistasPage toast={toast} />
 : <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
 default: return <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
 }

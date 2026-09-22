@@ -82,7 +82,7 @@ export type Route =
   | 'dashboard' | 'cotizacion' | 'rastreo' | 'detalle'
   | 'pago' | 'pagos' | 'cotizaciones' | 'envios'
   | 'soporte' | 'ticket' | 'config' | 'planes' | 'reportes'
-  | 'operacion'
+  | 'operacion' | 'transportistas'
 
 export type PublicRoute = 'landing' | 'login' | 'register' | 'planes' | 'terminos' | 'privacidad'
 

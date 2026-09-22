@@ -38,7 +38,10 @@ interface SidebarProps {
 
 export function Sidebar({ route, navigate, collapsed, setCollapsed, user, esOperador }: SidebarProps) {
   const items = esOperador
-    ? [{ section: 'Operacion' }, { id: 'operacion', label: 'Consola', icon: 'truck' }, ...NAV]
+    ? [{ section: 'Operacion' },
+       { id: 'operacion', label: 'Consola', icon: 'truck' },
+       { id: 'transportistas', label: 'Transportistas', icon: 'building' },
+       ...NAV]
     : NAV
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
