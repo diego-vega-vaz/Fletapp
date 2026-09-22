@@ -37,11 +37,15 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
   const [shipments, setShipments] = useState<DbShipment[]>([])
   const [loading, setLoading] = useState(true)
 
+  // La carga inicial no escribe estado de forma sincrona dentro del efecto
+  // (react-hooks/set-state-in-effect: provoca renders en cascada) y se cancela
+  // si la pantalla se desmonta antes de que responda la consulta.
   useEffect(() => {
-    setLoading(true)
+    let vivo = true
     getShipments()
-      .then(setShipments)
-      .finally(() => setLoading(false))
+      .then(s => { if (vivo) setShipments(s) })
+      .finally(() => { if (vivo) setLoading(false) })
+    return () => { vivo = false }
   }, [])
 
   const filtered = useMemo(() => {

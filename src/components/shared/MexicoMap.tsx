@@ -15,12 +15,18 @@ interface MexicoMapProps {
 }
 
 export function MexicoMap({ route, progress = 0.44, height = 320, animated = true }: MexicoMapProps) {
-  const [truckPos, setTruckPos] = useState(progress)
+  const [animPos, setAnimPos] = useState(progress)
   const animRef = useRef<number | null>(null)
   const startRef = useRef<number | null>(null)
 
+  // Sin animacion la posicion se DERIVA del prop en vez de copiarse al estado.
+  // Antes el efecto hacia setTruckPos(progress) de forma sincrona, que es lo
+  // que marca react-hooks/set-state-in-effect, y ademas duplicaba en estado
+  // algo que ya venia de arriba.
+  const truckPos = animated ? animPos : progress
+
   useEffect(() => {
-    if (!animated) { setTruckPos(progress); return }
+    if (!animated) return
     startRef.current = null
     const target = progress
     const start = 0
@@ -31,7 +37,7 @@ export function MexicoMap({ route, progress = 0.44, height = 320, animated = tru
       const elapsed = ts - startRef.current
       const t = Math.min(elapsed / dur, 1)
       const ease = 1 - Math.pow(1 - t, 3)
-      setTruckPos(start + (target - start) * ease)
+      setAnimPos(start + (target - start) * ease)
       if (t < 1) animRef.current = requestAnimationFrame(step)
     }
     animRef.current = requestAnimationFrame(step)

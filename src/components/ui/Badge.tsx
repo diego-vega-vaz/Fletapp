@@ -1,7 +1,7 @@
 import { Icon } from './Icon'
 import type { ShipmentStatus } from '../../types'
 
-export const STATUS_CONFIG = {
+const STATUS_CONFIG = {
   pending:   { label: 'Pendiente',      color: 'var(--st-pending)',   bg: 'var(--orange-50)', icon: 'clock' },
   transit:   { label: 'En tránsito',    color: 'var(--st-transit)',   bg: 'var(--blue-50)',   icon: 'truck' },
   arrived:   { label: 'Llegado',        color: 'var(--st-arrived)',   bg: 'var(--orange-50)', icon: 'mapPin' },

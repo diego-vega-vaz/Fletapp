@@ -45,7 +45,19 @@ export function DocumentsManager({ shipmentRef, toast }: Props) {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [shipmentRef])
+  // La carga inicial no escribe estado de forma sincrona dentro del efecto
+  // (react-hooks/set-state-in-effect: provoca renders en cascada) y se cancela
+  // si la pantalla se desmonta antes de que responda la consulta.
+  useEffect(() => {
+    let vivo = true
+    listDocuments(shipmentRef)
+      .then(d => { if (vivo) setDocs(d) })
+      .catch(() => { if (vivo) toast({ type: 'error', title: 'No se pudieron cargar los documentos' }) })
+      .finally(() => { if (vivo) setLoading(false) })
+    return () => { vivo = false }
+    // toast se excluye a proposito: no debe re-disparar la carga.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shipmentRef])
 
   const doUpload = async (file: File) => {
     if (file.size > MAX_SIZE) { toast({ type: 'warning', title: 'Archivo muy grande', msg: 'Máximo 10 MB' }); return }

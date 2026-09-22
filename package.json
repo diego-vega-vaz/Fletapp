@@ -14,7 +14,7 @@
     "verificar": "node scripts/verificar-verdad.mjs",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "check": "npm run build && npm run verificar && npm run test"
+    "check": "npm run lint && npm run build && npm run verificar && npm run test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.0",

@@ -305,6 +305,35 @@ function SeguridadTab() {
 }
 
 /* ---------------------- Tab: Notificaciones ---------------------- */
+
+// Vive aqui arriba y no dentro de NotificacionesTab a proposito: un componente
+// definido dentro de otro se vuelve a crear en cada render, y React lo trata
+// como un componente distinto — desmonta y vuelve a montar el subarbol entero
+// cada vez que cambia un switch. Es lo que marca react-hooks/static-components.
+function ChannelCard({ icon, title, sub, events, notifs, onToggle }: {
+  icon: string; title: string; sub: string
+  events: { key: NotificationKey; label: string; sub: string }[]
+  notifs: NotificationState
+  onToggle: (key: NotificationKey) => void
+}) {
+  return (
+    <Card>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={icon} size={19} style={{ color: 'var(--primary)' }} />
+        </div>
+        <div>
+          <div style={{ fontWeight: 700, color: 'var(--text-strong)', fontSize: 15 }}>{title}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{sub}</div>
+        </div>
+      </div>
+      {events.map(ev => (
+        <NotifRow key={ev.key} label={ev.label} sub={ev.sub} value={notifs[ev.key]} onChange={() => onToggle(ev.key)} />
+      ))}
+    </Card>
+  )
+}
+
 function NotificacionesTab({ email, phone }: { email: string; phone: string }) {
   const [notifs, setNotifs] = useState<NotificationState>({
     email_transit: true, email_delivered: true, email_payment: true, email_quotes: false,
@@ -334,32 +363,13 @@ function NotificacionesTab({ email, phone }: { email: string; phone: string }) {
     { key: 'push_quotes' as NotificationKey, label: 'Cotizaciones', sub: 'Nuevas ofertas y vencimientos' },
   ]
 
-  function ChannelCard({ icon, title, sub, events }: { icon: string; title: string; sub: string; events: { key: NotificationKey; label: string; sub: string }[] }) {
-    return (
-      <Card>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name={icon} size={19} style={{ color: 'var(--primary)' }} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-strong)', fontSize: 15 }}>{title}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{sub}</div>
-          </div>
-        </div>
-        {events.map(ev => (
-          <NotifRow key={ev.key} label={ev.label} sub={ev.sub} value={notifs[ev.key]} onChange={() => toggle(ev.key)} />
-        ))}
-      </Card>
-    )
-  }
-
   return (
     <div>
       <SectionHead title="Preferencias de notificaciones" sub="Elige cómo y cuándo recibir alertas de tu cuenta" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <ChannelCard icon="mail" title="Correo electrónico" sub={`Enviado a ${email}`} events={emailEvents} />
-        <ChannelCard icon="messageSquare" title="Mensajes SMS" sub={phone ? `Enviado a ${phone}` : 'Agrega tu teléfono en Perfil'} events={smsEvents} />
-        <ChannelCard icon="bell" title="Notificaciones push" sub="En la app y el navegador" events={pushEvents} />
+        <ChannelCard icon="mail" title="Correo electrónico" sub={`Enviado a ${email}`} events={emailEvents} notifs={notifs} onToggle={toggle} />
+        <ChannelCard icon="messageSquare" title="Mensajes SMS" sub={phone ? `Enviado a ${phone}` : 'Agrega tu teléfono en Perfil'} events={smsEvents} notifs={notifs} onToggle={toggle} />
+        <ChannelCard icon="bell" title="Notificaciones push" sub="En la app y el navegador" events={pushEvents} notifs={notifs} onToggle={toggle} />
       </div>
     </div>
   )
@@ -372,10 +382,12 @@ export function ConfigPage({ user }: ConfigPageProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let vivo = true
     getProfile()
-      .then(p => setProfile(p ?? { id: '', full_name: user.name, company: user.company, rfc: null, phone: null }))
-      .finally(() => setLoading(false))
-  }, [])
+      .then(p => { if (vivo) setProfile(p ?? { id: '', full_name: user.name, company: user.company, rfc: null, phone: null }) })
+      .finally(() => { if (vivo) setLoading(false) })
+    return () => { vivo = false }
+  }, [user.name, user.company])
 
   const displayName = profile?.full_name || user.name || user.email
   const displayEmail = user.email

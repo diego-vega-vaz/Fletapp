@@ -38,7 +38,16 @@ export function SoportePage({ navigate, toast }: Props) {
     getTickets().then(setTickets).finally(() => setLoading(false))
   }
 
-  useEffect(() => { loadTickets() }, [])
+  // La carga inicial no escribe estado de forma sincrona dentro del efecto
+  // (react-hooks/set-state-in-effect: provoca renders en cascada) y se cancela
+  // si la pantalla se desmonta antes de que responda la consulta.
+  useEffect(() => {
+    let vivo = true
+    getTickets()
+      .then(t => { if (vivo) setTickets(t) })
+      .finally(() => { if (vivo) setLoading(false) })
+    return () => { vivo = false }
+  }, [])
 
   const submit = async () => {
     if (!subject.trim() || !desc.trim()) { toast({ type: 'warning', title: 'Completa el asunto y la descripción' }); return }

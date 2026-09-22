@@ -18,12 +18,19 @@ interface Props {
 
 export function DetalleEnvioPage({ navigate, params, toast }: Props) {
   const [shipment, setShipment] = useState<DbShipment | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(params?.id))
 
+  // loading arranca segun haya id o no: antes el efecto hacia
+  // setLoading(false) de forma sincrona, que es lo que marca
+  // react-hooks/set-state-in-effect. Ademas se cancela al desmontar.
   useEffect(() => {
     const id = params?.id
-    if (!id) { setLoading(false); return }
-    getShipment(id).then(setShipment).finally(() => setLoading(false))
+    if (!id) return
+    let vivo = true
+    getShipment(id)
+      .then(s => { if (vivo) setShipment(s) })
+      .finally(() => { if (vivo) setLoading(false) })
+    return () => { vivo = false }
   }, [params?.id])
 
   if (loading) {

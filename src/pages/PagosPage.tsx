@@ -17,7 +17,7 @@ interface Props {
 
 export function PagosPage({ navigate, params, toast }: Props) {
   const [shipment, setShipment] = useState<DbShipment | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(params?.id))
   const [method, setMethod] = useState<'card' | 'transfer' | 'credit'>('card')
   const [terms, setTerms] = useState(false)
   const [saveCard, setSaveCard] = useState(false)
@@ -25,9 +25,12 @@ export function PagosPage({ navigate, params, toast }: Props) {
   const [success, setSuccess] = useState(false)
   const [txRef, setTxRef] = useState('')
 
+  // loading arranca segun haya id: antes el efecto hacia setLoading(false)
+  // de forma sincrona (react-hooks/set-state-in-effect). Se cancela al desmontar.
   useEffect(() => {
     const id = params?.id
-    if (!id) { setLoading(false); return }
+    if (!id) return
+    let vivo = true
 
     async function load() {
       let s = await getShipment(id!)
@@ -35,10 +38,12 @@ export function PagosPage({ navigate, params, toast }: Props) {
         const inv = await getInvoiceByRef(id!)
         if (inv?.shipment_id) s = await getShipmentById(inv.shipment_id)
       }
+      if (!vivo) return
       setShipment(s)
       setLoading(false)
     }
     load()
+    return () => { vivo = false }
   }, [params?.id])
 
   const remaining = shipment ? shipment.price - shipment.paid : 0

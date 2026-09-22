@@ -69,7 +69,7 @@ export function FacturasPage({ navigate, toast }: Props) {
         {[
           { icon: 'dollar', color: 'var(--orange-600)', bg: 'var(--orange-50)', label: 'Pendiente por pagar', value: fmtMXN(pending), sub: `${pendingCount} comprobante${pendingCount !== 1 ? 's' : ''}`, cta: pendingCount > 0 ? 'Pagar ahora' : undefined, onCta: () => navigate('pago', { id: 'pendiente' }) },
           { icon: 'checkCircle', color: 'var(--green-600)', bg: 'var(--green-50)', label: 'Total pagado', value: fmtMXN(paidTotal), sub: `${invoices.filter(i => i.status === 'paid').length} comprobantes liquidados` },
-          { icon: 'fileText', color: 'var(--primary)', bg: 'var(--blue-50)', label: 'Total de comprobantes', value: String(invoices.length), sub: 'Emitidos por FletApp' },
+          { icon: 'fileText', color: 'var(--primary)', bg: 'var(--blue-50)', label: 'Total de comprobantes', value: String(invoices.length), sub: 'Emitidos por FleetApp' },
         ].map(c => (
           <Card key={c.label} hover style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span style={{ width: 40, height: 40, borderRadius: 11, background: c.bg, color: c.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -188,7 +188,7 @@ export function FacturasPage({ navigate, toast }: Props) {
           <Card>
             <div className="section-title" style={{ fontSize: 15, marginBottom: 14 }}>Otros métodos</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[['Transferencia SPEI', 'Solicita los datos bancarios a tu ejecutivo', 'building'], ['Crédito FletApp', 'Contacta a tu ejecutivo para activar', 'zap']].map(([l, sub, ic]) => (
+              {[['Transferencia SPEI', 'Solicita los datos bancarios a tu ejecutivo', 'building'], ['Crédito FleetApp', 'Contacta a tu ejecutivo para activar', 'zap']].map(([l, sub, ic]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, border: '1px solid var(--border-soft)', borderRadius: 10 }}>
                   <Icon name={ic} size={20} style={{ color: 'var(--text-faint)' }} />
                   <div>

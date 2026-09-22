@@ -1,4 +1,4 @@
-# Bitácora de decisiones técnicas — FletApp
+# Bitácora de decisiones técnicas — FleetApp
 
 Por qué se eligió cada cosa. En cuatro meses nadie se va a acordar, y el
 cliente sí va a preguntar.
@@ -74,7 +74,7 @@ en `src/data/mockData.ts`. `plans.ts` lo reexporta en vez de tener el suyo.
 (`Intl.NumberFormat`, sin decimales) y `CotizacionPage` importa de ambos
 módulos. El rename simple no habría compilado.
 
-**Por qué.** Todo en FletApp se cobra en pesos. Dos formateadores con el mismo
+**Por qué.** Todo en FleetApp se cobra en pesos. Dos formateadores con el mismo
 nombre y salidas distintas es una discrepancia esperando ocurrir en una
 factura.
 

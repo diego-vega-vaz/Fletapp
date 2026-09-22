@@ -52,8 +52,15 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
       .finally(() => setLoading(false))
   }
 
+  // La carga inicial no escribe estado de forma sincrona dentro del efecto
+  // (react-hooks/set-state-in-effect: provoca renders en cascada) y se cancela
+  // si la pantalla se desmonta antes de que responda la consulta.
   useEffect(() => {
-    loadQuotes()
+    let vivo = true
+    getQuotes()
+      .then(q => { if (vivo) setQuotes(q) })
+      .finally(() => { if (vivo) setLoading(false) })
+    return () => { vivo = false }
   }, [])
 
   async function handleAccept(quote: DbQuote) {

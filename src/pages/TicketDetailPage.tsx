@@ -32,7 +32,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
 export function TicketDetailPage({ navigate, toast, params }: Props) {
   const [ticket, setTicket] = useState<DbTicket | null>(null)
   const [messages, setMessages] = useState<DbTicketMessage[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(params?.id))
   const [msg, setMsg] = useState('')
   const [sending, setSending] = useState(false)
   const [userName, setUserName] = useState('Tú')
@@ -45,20 +45,25 @@ export function TicketDetailPage({ navigate, toast, params }: Props) {
     })
   }, [])
 
+  // loading arranca segun haya id: antes el efecto hacia setLoading(false)
+  // de forma sincrona (react-hooks/set-state-in-effect). Se cancela al desmontar.
   useEffect(() => {
     const ticketNumber = params?.id
-    if (!ticketNumber) { setLoading(false); return }
+    if (!ticketNumber) return
+    let vivo = true
 
     async function load() {
       const t = await getTicket(ticketNumber!)
       if (t) {
-        setTicket(t)
         const msgs = await getTicketMessages(t.id)
+        if (!vivo) return
+        setTicket(t)
         setMessages(msgs)
       }
-      setLoading(false)
+      if (vivo) setLoading(false)
     }
     load()
+    return () => { vivo = false }
   }, [params?.id])
 
   useEffect(() => {

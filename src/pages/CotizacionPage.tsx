@@ -32,6 +32,11 @@ interface FormData {
   terms: boolean
 }
 
+// Antes era (k: keyof FormData, v: any). El `any` dejaba pasar cualquier cosa
+// en cualquier campo: poner un string en `containers` compilaba sin chistar.
+// Asi el tipo del valor queda amarrado al campo.
+type SetCampo = <K extends keyof FormData>(k: K, v: FormData[K]) => void
+
 function PriceRow({ label, value, faint, total }: { label: string; value: number | string; faint?: boolean; total?: boolean }) {
   // El total lleva la moneda explicita: es el numero que el cliente compara y aprueba.
   const display = typeof value === 'number' ? fmtMXN(value) + (total ? ' MXN' : '') : value
@@ -43,7 +48,7 @@ function PriceRow({ label, value, faint, total }: { label: string; value: number
   )
 }
 
-function Step1({ data, set, errors }: { data: FormData; set: (k: keyof FormData, v: any) => void; errors: Record<string, string> }) {
+function Step1({ data, set, errors }: { data: FormData; set: SetCampo; errors: Record<string, string> }) {
   return (
     <Card>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 20 }}>Detalles del envío</h2>
@@ -143,7 +148,7 @@ function Step2({ data }: { data: FormData }) {
   )
 }
 
-function Step3({ data, set, errors }: { data: FormData; set: (k: keyof FormData, v: any) => void; errors: Record<string, string> }) {
+function Step3({ data, set, errors }: { data: FormData; set: SetCampo; errors: Record<string, string> }) {
   return (
     <Card>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 20 }}>Información aduanal</h2>
@@ -177,7 +182,7 @@ function Step3({ data, set, errors }: { data: FormData; set: (k: keyof FormData,
   )
 }
 
-function Step4({ data, price, precioError, set }: { data: FormData; price: DesglosePrecio | null; precioError: string; set: (k: keyof FormData, v: any) => void }) {
+function Step4({ data, price, precioError, set }: { data: FormData; price: DesglosePrecio | null; precioError: string; set: SetCampo }) {
   return (
     <Card>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 20 }}>Resumen de cotización</h2>
@@ -255,7 +260,7 @@ export function CotizacionPage({ navigate, toast }: Props) {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
-  const set = (k: keyof FormData, v: any) => setData(d => ({ ...d, [k]: v }))
+  const set: SetCampo = (k, v) => setData(d => ({ ...d, [k]: v }))
   const [price, setPrice] = useState<DesglosePrecio | null>(null)
   const [precioError, setPrecioError] = useState('')
   const steps = ['Detalles', 'Ruta', 'Aduanas', 'Resumen']
@@ -279,7 +284,10 @@ export function CotizacionPage({ navigate, toast }: Props) {
   useEffect(() => {
     if (step !== 3) return
     let cancelado = false
-    setPrice(null); setPrecioError('')
+    // En microtask y no directo: limpiar aqui de forma sincrona es una
+    // escritura de estado dentro del efecto (react-hooks/set-state-in-effect).
+    // El efecto es el mismo: se borra el precio viejo antes de que llegue el nuevo.
+    queueMicrotask(() => { if (!cancelado) { setPrice(null); setPrecioError('') } })
     cotizar(payload(), { preview: true })
       .then(r => { if (!cancelado) setPrice(r.desglose) })
       .catch(e => { if (!cancelado) setPrecioError(e.message) })

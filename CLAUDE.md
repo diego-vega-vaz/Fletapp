@@ -1,9 +1,9 @@
-# FletApp — contexto para Claude Code
+# FleetApp — contexto para Claude Code
 
 ## Qué es esto
 
 Un intermediario digital de fletes terrestres en México. Un embarcador pide
-precio, FletApp le consigue un camión verificado, cobra, le paga al
+precio, FleetApp le consigue un camión verificado, cobra, le paga al
 transportista y se queda con la comisión.
 
 **Modelo de negocio: marketplace / brokerage. Se cobra COMISIÓN POR FLETE, no

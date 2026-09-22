@@ -119,7 +119,3 @@ export function OnboardingModal({ userName, userEmail, onCreateQuote, onDismiss 
     </div>
   )
 }
-
-export function shouldShowOnboarding(email: string): boolean {
-  return !localStorage.getItem(`fleetapp_onboarding_${email}`)
-}
