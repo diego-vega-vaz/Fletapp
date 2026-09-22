@@ -20,8 +20,13 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     env: {
-      VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ?? 'https://ejemplo.supabase.co',
-      VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY ?? 'anon-de-prueba',
+      // || y no ??: en GitHub Actions un secreto que no existe llega como
+      // cadena VACIA, no como undefined. Con ?? la cadena vacia pasaba tal
+      // cual, el bundle se compilaba con supabaseUrl='' y la app tronaba en
+      // el navegador con "supabaseUrl is required". Seis pruebas fallaban
+      // apuntando al sitio equivocado.
+      VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || 'https://ejemplo.supabase.co',
+      VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || 'anon-de-prueba',
     },
   },
 })

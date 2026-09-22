@@ -18,6 +18,16 @@ jobs:
 
       - run: npm ci
 
+      # Un secreto que no existe llega como cadena vacia y el build compila
+      # una app rota en silencio. Mejor tronar aqui con un mensaje claro.
+      - name: Verificar que existan los secretos
+        run: |
+          test -n "$VITE_SUPABASE_URL" || { echo "Falta el secreto VITE_SUPABASE_URL en Settings > Secrets and variables > Actions"; exit 1; }
+          test -n "$VITE_SUPABASE_ANON_KEY" || { echo "Falta el secreto VITE_SUPABASE_ANON_KEY en Settings > Secrets and variables > Actions"; exit 1; }
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
       - name: Tipos
         run: npx tsc -b
 
