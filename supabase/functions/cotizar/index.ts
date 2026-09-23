@@ -91,7 +91,13 @@ Deno.serve(async (req) => {
       operation: limpio.operation || null,
       incoterm: limpio.incoterm || null,
       price: desglose.total,
+      precio_sugerido: desglose.total,
       price_breakdown: desglose,
+      // Nace en revision, no lista para vender. El precio que calcula esta
+      // funcion todavia no sabe de distancia ni de lo que cobra el
+      // transportista; que un humano lo libere no es burocracia, es lo unico
+      // que hay entre el calculo y un compromiso de venta.
+      status: 'por_aprobar',
     })
     .select()
     .single()

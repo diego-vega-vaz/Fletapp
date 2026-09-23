@@ -49,6 +49,8 @@ const PROHIBIDO = [
     porque: 'No hay pasarela. Nada esta protegido todavia.' },
   { patron: 'menores a 2 horas',
     porque: 'SLA de soporte que nadie se comprometio a cumplir y no hay quien lo mida.' },
+  { patron: 'lido hasta: Hoy a las',
+    porque: 'Vigencia escrita a mano que no corresponde a expires_at. La cotizacion vence 24 h despues de que el operador la aprueba, no a las 5 de la tarde de hoy.' },
   { patron: '*1600',
     porque: 'La tarifa por contenedor volvio al navegador. El precio lo calcula la Edge Function cotizar; si la formula viaja al cliente, el cliente la puede cambiar.' },
 ]
@@ -57,6 +59,8 @@ const PROHIBIDO = [
 const OBLIGATORIO = [
   { patron: 'no tienen validez fiscal',
     porque: 'El aviso de que los comprobantes no son CFDI tiene que seguir visible.' },
+  { patron: 'Este precio es un estimado',
+    porque: 'El embarcador tiene que saber que el precio que ve al cotizar todavia lo revisa una persona. Si desaparece, la pantalla vuelve a presentar un calculo automatico como si fuera una oferta en firme.' },
 ]
 
 if (!existsSync(DIST)) {

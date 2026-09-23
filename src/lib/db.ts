@@ -28,7 +28,12 @@ export interface DbQuote {
   weight: string | null
   cargo_desc: string | null
   price: number | null
+  /** Lo que calculo el servidor. Si difiere de `price`, un humano lo ajusto. */
+  precio_sugerido: number | null
+  /** por_aprobar | aprobada | rechazada | accepted | expired */
   status: string
+  motivo_rechazo: string | null
+  ajuste_nota: string | null
   expires_at: string
   created_at: string
 }
@@ -57,6 +62,8 @@ export interface DbShipment {
   carrier: string | null
   driver: string | null
   plate: string | null
+  /** Entrega comprometida. La fija el operador; `eta` es texto libre heredado. */
+  compromiso_en: string | null
   created_at: string
 }
 

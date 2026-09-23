@@ -16,8 +16,10 @@ import { Spinner, KVRow } from '../components/ui/Misc'
 import { Tabs } from '../components/ui/Tabs'
 import { fmtMXN } from '../data/mockData'
 import {
-  getEnviosOperacion, getCotizacionesOperacion,
-  type EnvioOperacion, type CotizacionOperacion,
+  getEnviosOperacion, getCotizacionesOperacion, getEnviosEnRiesgo,
+  aprobarCotizacion, rechazarCotizacion, fijarCompromiso,
+  MOTIVO_ALERTA,
+  type EnvioOperacion, type CotizacionOperacion, type EnvioEnRiesgo,
 } from '../lib/operacion'
 import {
   moverEnvio, asignarUnidad, getEventos,
@@ -37,6 +39,19 @@ const FILTROS: { id: string; label: string }[] = [
   { id: 'cancelled', label: 'Cancelados' },
 ]
 
+/**
+ * `datetime-local` no entiende ISO con zona: quiere 'YYYY-MM-DDTHH:mm' en hora
+ * local. Convertir con toISOString() aqui restaria las horas de la zona y el
+ * operador veria una fecha distinta a la que guardo.
+ */
+const paraInput = (iso: string | null) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const dosDig = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${dosDig(d.getMonth() + 1)}-${dosDig(d.getDate())}`
+       + `T${dosDig(d.getHours())}:${dosDig(d.getMinutes())}`
+}
+
 const fecha = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
 
@@ -44,16 +59,20 @@ export function OperacionPage({ toast }: Props) {
   const [tab, setTab] = useState('envios')
   const [envios, setEnvios] = useState<EnvioOperacion[]>([])
   const [cotizaciones, setCotizaciones] = useState<CotizacionOperacion[]>([])
+  const [riesgo, setRiesgo] = useState<EnvioEnRiesgo[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [filtro, setFiltro] = useState('todos')
   const [abierto, setAbierto] = useState<EnvioOperacion | null>(null)
+  const [revisando, setRevisando] = useState<CotizacionOperacion | null>(null)
 
   const cargar = async () => {
     setCargando(true); setError('')
     try {
-      const [e, c] = await Promise.all([getEnviosOperacion(), getCotizacionesOperacion()])
-      setEnvios(e); setCotizaciones(c)
+      const [e, c, a] = await Promise.all([
+        getEnviosOperacion(), getCotizacionesOperacion(), getEnviosEnRiesgo(),
+      ])
+      setEnvios(e); setCotizaciones(c); setRiesgo(a)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la operación')
     } finally {
@@ -68,8 +87,10 @@ export function OperacionPage({ toast }: Props) {
     let vivo = true
     ;(async () => {
       try {
-        const [e, c] = await Promise.all([getEnviosOperacion(), getCotizacionesOperacion()])
-        if (vivo) { setEnvios(e); setCotizaciones(c) }
+        const [e, c, a] = await Promise.all([
+          getEnviosOperacion(), getCotizacionesOperacion(), getEnviosEnRiesgo(),
+        ])
+        if (vivo) { setEnvios(e); setCotizaciones(c); setRiesgo(a) }
       } catch (err) {
         if (vivo) setError(err instanceof Error ? err.message : 'No se pudo cargar la operación')
       } finally {
@@ -86,6 +107,7 @@ export function OperacionPage({ toast }: Props) {
 
   const porAsignar = envios.filter(e => e.status === 'waiting' && !e.carrier).length
   const enRuta = envios.filter(e => e.status === 'transit' || e.status === 'delayed').length
+  const porAprobar = cotizaciones.filter(c => c.status === 'por_aprobar').length
 
   return (
     <div className="page">
@@ -109,15 +131,53 @@ export function OperacionPage({ toast }: Props) {
           <div style={{ fontSize: 26, fontWeight: 750, color: 'var(--text-strong)' }}>{enRuta}</div>
         </Card>
         <Card style={{ flex: '1 1 180px' }}>
-          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>Cotizaciones totales</div>
-          <div style={{ fontSize: 26, fontWeight: 750, color: 'var(--text-strong)' }}>{cotizaciones.length}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>Cotizaciones por aprobar</div>
+          <div style={{ fontSize: 26, fontWeight: 750, color: porAprobar ? 'var(--orange-500)' : 'var(--text-strong)' }}>{porAprobar}</div>
+        </Card>
+        <Card style={{ flex: '1 1 180px' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>Van tarde</div>
+          <div style={{ fontSize: 26, fontWeight: 750, color: riesgo.length ? 'var(--red-500)' : 'var(--text-strong)' }}>{riesgo.length}</div>
         </Card>
       </div>
+
+      {riesgo.length > 0 && (
+        <Card style={{ marginBottom: 20, borderColor: 'var(--red-500)' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+            <Icon name="alertCircle" size={18} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>
+              Lo que va tarde ({riesgo.length})
+            </span>
+          </div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginBottom: 12 }}>
+            Esto no es rastreo: nadie sabe dónde está el camión. Es la lista de lo que
+            <strong> no ha pasado</strong> — sin unidad asignada, fecha vencida, o sin reporte.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {riesgo.map(a => (
+              <div key={`${a.shipment_id}-${a.motivo}`}
+                   style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
+                            padding: '8px 10px', borderRadius: 8, background: 'var(--red-50)' }}>
+                <span className="mono" style={{ fontSize: 12.5, color: 'var(--text-faint)', minWidth: 96 }}>
+                  {a.ref_id || '—'}
+                </span>
+                <Badge color="var(--red-500)" bg="#fff" dot>{MOTIVO_ALERTA[a.motivo]}</Badge>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)', flex: '1 1 240px' }}>
+                  {a.detalle}
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  const e = envios.find(x => x.id === a.shipment_id)
+                  if (e) { setTab('envios'); setAbierto(e) }
+                }}>Abrir</Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Tabs
         tabs={[
           { id: 'envios', label: `Envíos (${envios.length})`, icon: 'package' },
-          { id: 'cotizaciones', label: `Cotizaciones (${cotizaciones.length})`, icon: 'fileText' },
+          { id: 'cotizaciones', label: `Cotizaciones (${porAprobar ? `${porAprobar} por aprobar` : cotizaciones.length})`, icon: 'fileText' },
         ]}
         active={tab}
         onChange={setTab}
@@ -213,9 +273,9 @@ export function OperacionPage({ toast }: Props) {
             <div style={{ display: 'flex', gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
               <Icon name="info" size={17} />
               <span>
-                Esta lista es de sólo lectura. El flujo de <strong>aprobar una cotización antes
-                de que el embarcador la vea</strong> todavía no existe: hoy el embarcador acepta
-                su propia cotización con el precio que calculó el servidor.
+                El precio que trae cada cotización lo calculó el servidor con una fórmula que
+                todavía <strong>no conoce distancia ni el costo del transportista</strong>.
+                Revísalo antes de liberarlo: el embarcador no lo ve hasta que tú lo apruebas.
               </span>
             </div>
           </Card>
@@ -232,7 +292,7 @@ export function OperacionPage({ toast }: Props) {
                     <div style={{ flex: '1 1 220px', minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                         <span className="mono" style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>{c.ref_id}</span>
-                        <StatusBadge status={c.status === 'accepted' ? 'delivered' : 'pending'} withIcon={false} />
+                        <EstadoCotizacion status={c.status} />
                       </div>
                       <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text-strong)' }}>
                         {c.origin} → {c.dest}
@@ -240,21 +300,45 @@ export function OperacionPage({ toast }: Props) {
                       <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 2 }}>
                         {c.embarcador?.empresa || 'Sin empresa'} · {fecha(c.created_at)}
                       </div>
+                      {c.ajuste_nota && (
+                        <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 4 }}>
+                          Ajuste: {c.ajuste_nota}
+                        </div>
+                      )}
+                      {c.motivo_rechazo && (
+                        <div style={{ fontSize: 12.5, color: 'var(--red-500)', marginTop: 4 }}>
+                          Rechazada: {c.motivo_rechazo}
+                        </div>
+                      )}
                     </div>
                     <div style={{ flex: '0 0 auto', textAlign: 'right' }}>
                       <div className="mono tnum" style={{ fontSize: 15, fontWeight: 750, color: 'var(--text-strong)' }}>
                         {c.price != null ? `${fmtMXN(c.price)} MXN` : '—'}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-                        {c.price_breakdown ? 'calculado en servidor' : 'sin desglose'}
+                        {c.precio_sugerido != null && c.price != null && c.precio_sugerido !== c.price
+                          ? `sugerido ${fmtMXN(c.precio_sugerido)}`
+                          : c.price_breakdown ? 'calculado en servidor' : 'sin desglose'}
                       </div>
                     </div>
+                    {c.status === 'por_aprobar' && (
+                      <Button size="sm" icon="checkCircle" onClick={() => setRevisando(c)}>Revisar</Button>
+                    )}
                   </div>
                 </Card>
               ))}
             </div>
           )}
         </div>
+      )}
+
+      {revisando && (
+        <RevisarCotizacion
+          cot={revisando}
+          onClose={() => setRevisando(null)}
+          onCambio={() => { setRevisando(null); cargar() }}
+          toast={toast}
+        />
       )}
 
       {abierto && (
@@ -269,6 +353,129 @@ export function OperacionPage({ toast }: Props) {
   )
 }
 
+// ── Estado de una cotizacion ──────────────────────────────────
+
+const ESTADO_COT: Record<string, { label: string; color: string; bg: string }> = {
+  por_aprobar: { label: 'Por aprobar', color: 'var(--orange-500)', bg: 'var(--orange-50)' },
+  aprobada:    { label: 'Aprobada',    color: 'var(--green-500)',  bg: 'var(--green-50)' },
+  rechazada:   { label: 'Rechazada',   color: 'var(--red-500)',    bg: 'var(--red-50)' },
+  accepted:    { label: 'Aceptada',    color: 'var(--green-500)',  bg: 'var(--green-50)' },
+  expired:     { label: 'Vencida',     color: 'var(--red-500)',    bg: 'var(--red-50)' },
+}
+
+function EstadoCotizacion({ status }: { status: string }) {
+  const m = ESTADO_COT[status]
+  if (!m) return <Badge color="var(--text-faint)" bg="var(--gray-50)">{status}</Badge>
+  return <Badge color={m.color} bg={m.bg} dot>{m.label}</Badge>
+}
+
+// ── Revisar una cotizacion ────────────────────────────────────
+
+interface RevisarProps {
+  cot: CotizacionOperacion
+  onClose: () => void
+  onCambio: () => void
+  toast: Props['toast']
+}
+
+/**
+ * La pantalla donde una persona decide el precio. No hay boton de "aprobar
+ * todo": cada cotizacion se mira una por una, y eso es a proposito. Cuando
+ * haya 30 envios reales y un tarifario de verdad se podra automatizar; antes
+ * de eso, automatizar es adivinar mas rapido.
+ */
+function RevisarCotizacion({ cot, onClose, onCambio, toast }: RevisarProps) {
+  const sugerido = cot.precio_sugerido ?? cot.price ?? 0
+  const [precio, setPrecio] = useState(String(sugerido))
+  const [nota, setNota] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [vista, setVista] = useState<'aprobar' | 'rechazar'>('aprobar')
+  const [guardando, setGuardando] = useState(false)
+
+  const num = Number(precio)
+  const valido = Number.isFinite(num) && num > 0
+  const cambio = valido && num !== sugerido
+
+  const aprobar = async () => {
+    setGuardando(true)
+    try {
+      await aprobarCotizacion(cot.id, num, nota)
+      toast({ type: 'success', title: 'Cotización aprobada',
+              msg: `${cot.ref_id} · ${fmtMXN(num)} MXN` })
+      onCambio()
+    } catch (e) {
+      toast({ type: 'error', title: 'No se pudo aprobar', msg: e instanceof Error ? e.message : '' })
+    } finally { setGuardando(false) }
+  }
+
+  const rechazar = async () => {
+    setGuardando(true)
+    try {
+      await rechazarCotizacion(cot.id, motivo)
+      toast({ type: 'success', title: 'Cotización rechazada', msg: cot.ref_id })
+      onCambio()
+    } catch (e) {
+      toast({ type: 'error', title: 'No se pudo rechazar', msg: e instanceof Error ? e.message : '' })
+    } finally { setGuardando(false) }
+  }
+
+  const pie = vista === 'aprobar' ? (
+    <>
+      <Button variant="ghost" onClick={() => setVista('rechazar')}>Rechazar</Button>
+      <Button onClick={aprobar} loading={guardando}
+              disabled={!valido || (cambio && !nota.trim())}>
+        Aprobar y liberar
+      </Button>
+    </>
+  ) : (
+    <>
+      <Button variant="ghost" onClick={() => setVista('aprobar')}>Volver</Button>
+      <Button variant="danger" onClick={rechazar} loading={guardando}
+              disabled={!motivo.trim()}>Rechazar cotización</Button>
+    </>
+  )
+
+  return (
+    <Modal open onClose={onClose} width={580} footer={pie}
+           title={`${cot.ref_id} · ${cot.origin} → ${cot.dest}`}>
+      <KVRow label="Embarcador" value={cot.embarcador?.empresa || '—'} />
+      <KVRow label="Contacto" value={cot.embarcador?.nombre || '—'} />
+      <KVRow label="Carga" value={cot.cargo_desc || '—'} />
+      <KVRow label="Contenedores" value={cot.containers || '—'} />
+      <KVRow label="Peso" value={cot.weight || '—'} />
+      <KVRow label="Precio sugerido por el servidor"
+             value={`${fmtMXN(sugerido)} MXN`} mono strong />
+
+      {vista === 'aprobar' ? (
+        <div style={{ marginTop: 18 }}>
+          <Field label="Precio que verá el embarcador" required
+                 hint="En pesos, sin centavos. Si lo dejas igual al sugerido, no hace falta nota.">
+            <Input value={precio} onChange={e => setPrecio(e.target.value)} inputMode="numeric" />
+          </Field>
+          {cambio && (
+            <Field label="Por qué lo cambiaste" required
+                   hint="Se guarda con la cotización. Es el dato que después dice si la fórmula sirve o no.">
+              <Textarea rows={3} value={nota} onChange={e => setNota(e.target.value)}
+                        placeholder="Las casetas de la 57 subieron; el transportista cobra más en viernes" />
+            </Field>
+          )}
+          <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 10 }}>
+            Al aprobar, la cotización se le libera al embarcador y vence 24 horas después.
+          </div>
+        </div>
+      ) : (
+        <div style={{ marginTop: 18 }}>
+          <Field label="Motivo del rechazo" required
+                 hint="El embarcador lo va a leer. Escríbelo como se lo dirías por teléfono.">
+            <Textarea rows={3} value={motivo} onChange={e => setMotivo(e.target.value)}
+                      placeholder="Ruta fuera del corredor que estamos operando" />
+          </Field>
+        </div>
+      )}
+    </Modal>
+  )
+}
+
 // ── Detalle de un envio ───────────────────────────────────────
 
 interface DetalleProps {
@@ -280,12 +487,14 @@ interface DetalleProps {
 
 function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
   const [eventos, setEventos] = useState<EventoEnvio[]>([])
-  const [vista, setVista] = useState<'detalle' | 'asignar' | 'mover'>('detalle')
+  const [vista, setVista] = useState<'detalle' | 'asignar' | 'mover' | 'compromiso'>('detalle')
   const [guardando, setGuardando] = useState(false)
 
   const [transportista, setTransportista] = useState(envio.carrier ?? '')
   const [operador, setOperador] = useState(envio.driver ?? '')
   const [placas, setPlacas] = useState(envio.plate ?? '')
+
+  const [compromiso, setCompromiso] = useState(paraInput(envio.compromiso_en))
 
   const [status, setStatus] = useState<EstatusEnvio>((envio.status as EstatusEnvio) ?? 'waiting')
   const [ubicacion, setUbicacion] = useState('')
@@ -303,6 +512,18 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
       onCambio()
     } catch (e) {
       toast({ type: 'error', title: 'No se pudo asignar', msg: e instanceof Error ? e.message : '' })
+    } finally { setGuardando(false) }
+  }
+
+  const guardarCompromiso = async () => {
+    setGuardando(true)
+    try {
+      await fijarCompromiso(envio.id, compromiso ? new Date(compromiso).toISOString() : null)
+      toast({ type: 'success', title: 'Fecha compromiso guardada',
+              msg: compromiso ? fecha(new Date(compromiso).toISOString()) : 'Se quitó la fecha' })
+      onCambio()
+    } catch (e) {
+      toast({ type: 'error', title: 'No se pudo guardar', msg: e instanceof Error ? e.message : '' })
     } finally { setGuardando(false) }
   }
 
@@ -328,8 +549,16 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
       <Button variant="ghost" onClick={() => setVista('detalle')}>Cancelar</Button>
       <Button onClick={guardarMovimiento} loading={guardando}>Guardar cambio</Button>
     </>
+  ) : vista === 'compromiso' ? (
+    <>
+      <Button variant="ghost" onClick={() => setVista('detalle')}>Cancelar</Button>
+      <Button onClick={guardarCompromiso} loading={guardando}>Guardar fecha</Button>
+    </>
   ) : (
     <>
+      <Button variant="secondary" icon="clock" onClick={() => setVista('compromiso')}>
+        Fecha compromiso
+      </Button>
       <Button variant="secondary" icon="truck" onClick={() => setVista('asignar')}>
         {envio.carrier ? 'Cambiar unidad' : 'Asignar unidad'}
       </Button>
@@ -351,6 +580,8 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
           <KVRow label="Transportista" value={envio.carrier || 'Sin asignar'} />
           <KVRow label="Placas" value={envio.plate || '—'} mono />
           <KVRow label="Operador" value={envio.driver || '—'} />
+          <KVRow label="Entrega comprometida"
+                 value={envio.compromiso_en ? fecha(envio.compromiso_en) : 'Sin fecha'} />
           <KVRow label="Precio" value={`${fmtMXN(envio.price)} MXN`} mono strong />
           <KVRow label="Cobrado" value={`${fmtMXN(envio.paid)} MXN`} mono />
 
@@ -396,6 +627,20 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
           </Field>
           <Field label="Nombre del operador" hint="Opcional por ahora.">
             <Input value={operador} onChange={e => setOperador(e.target.value)} placeholder="Nombre del chofer" />
+          </Field>
+        </>
+      )}
+
+      {vista === 'compromiso' && (
+        <>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
+            Es la fecha que le prometiste al embarcador. Cuando se pase y el envío no
+            esté entregado, aparece en la lista de lo que va tarde. Déjala vacía para
+            quitarla.
+          </div>
+          <Field label="Fecha y hora de entrega">
+            <Input type="datetime-local" value={compromiso}
+                   onChange={e => setCompromiso(e.target.value)} />
           </Field>
         </>
       )}

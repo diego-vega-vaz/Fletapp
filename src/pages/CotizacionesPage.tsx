@@ -14,16 +14,18 @@ interface CotizacionesPageProps {
   navigate: (r: Route, p?: NavParams | null) => void
 }
 
-type QuoteStatus = 'pending' | 'accepted' | 'expired'
+type QuoteStatus = 'por_aprobar' | 'aprobada' | 'rechazada' | 'accepted' | 'expired'
 
 const STATUS_META: Record<QuoteStatus, { label: string; color: string; bg: string; icon: string }> = {
-  pending:  { label: 'Pendiente', color: 'var(--orange-500)', bg: 'var(--orange-50)', icon: 'clock' },
-  accepted: { label: 'Aceptada',  color: 'var(--green-500)',  bg: 'var(--green-50)',  icon: 'checkCircle' },
-  expired:  { label: 'Vencida',   color: 'var(--red-500)',    bg: 'var(--red-50)',    icon: 'alertCircle' },
+  por_aprobar: { label: 'En revisión', color: 'var(--text-faint)',  bg: 'var(--gray-50)',   icon: 'clock' },
+  aprobada:    { label: 'Lista',       color: 'var(--orange-500)',  bg: 'var(--orange-50)', icon: 'checkCircle' },
+  rechazada:   { label: 'Rechazada',   color: 'var(--red-500)',     bg: 'var(--red-50)',    icon: 'alertCircle' },
+  accepted:    { label: 'Aceptada',    color: 'var(--green-500)',   bg: 'var(--green-50)',  icon: 'checkCircle' },
+  expired:     { label: 'Vencida',     color: 'var(--red-500)',     bg: 'var(--red-50)',    icon: 'alertCircle' },
 }
 
 function QuoteBadge({ status }: { status: string }) {
-  const s = STATUS_META[status as QuoteStatus] ?? STATUS_META.pending
+  const s = STATUS_META[status as QuoteStatus] ?? STATUS_META.por_aprobar
   return (
     <span
       className="badge badge-soft"
@@ -74,9 +76,9 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
   }
 
   const counts = useMemo(() => ({
-    pending:  quotes.filter(q => q.status === 'pending').length,
+    revision: quotes.filter(q => q.status === 'por_aprobar').length,
+    listas:   quotes.filter(q => q.status === 'aprobada').length,
     accepted: quotes.filter(q => q.status === 'accepted').length,
-    expired:  quotes.filter(q => q.status === 'expired').length,
   }), [quotes])
 
   const filtered = useMemo(() => {
@@ -107,9 +109,17 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
 
   const summaryCards = [
     {
-      label: 'Pendientes',
-      count: counts.pending,
+      label: 'En revisión',
+      count: counts.revision,
       icon: 'clock',
+      color: 'var(--text-faint)',
+      bg: 'var(--gray-50)',
+      sub: 'Las estamos revisando',
+    },
+    {
+      label: 'Listas',
+      count: counts.listas,
+      icon: 'checkCircle',
       color: 'var(--orange-500)',
       bg: 'var(--orange-50)',
       sub: 'Esperando tu decisión',
@@ -121,14 +131,6 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
       color: 'var(--green-500)',
       bg: 'var(--green-50)',
       sub: 'Convertidas a envío',
-    },
-    {
-      label: 'Vencidas',
-      count: counts.expired,
-      icon: 'alertCircle',
-      color: 'var(--red-500)',
-      bg: 'var(--red-50)',
-      sub: 'Solicita una nueva',
     },
   ]
 
@@ -251,9 +253,13 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                     <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{q.containers ?? '—'}</span>
                   </td>
                   <td>
-                    <span className="tnum" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>
-                      {q.price != null ? fmtMXN(q.price) : '—'}
-                    </span>
+                    {q.status === 'por_aprobar' ? (
+                      <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>En revisión</span>
+                    ) : (
+                      <span className="tnum" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>
+                        {q.price != null ? fmtMXN(q.price) : '—'}
+                      </span>
+                    )}
                   </td>
                   <td>
                     <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{fmtDate(q.created_at)}</span>
@@ -263,7 +269,7 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                       style={{
                         fontSize: 13,
                         color: q.status === 'expired' ? 'var(--red-500)' : 'var(--text-muted)',
-                        fontWeight: q.status === 'pending' ? 600 : 400,
+                        fontWeight: q.status === 'aprobada' ? 600 : 400,
                       }}
                     >
                       {fmtDate(q.expires_at)}
@@ -274,7 +280,7 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                      {q.status === 'pending' && (
+                      {q.status === 'aprobada' && (
                         <Button
                           variant="success"
                           size="sm"

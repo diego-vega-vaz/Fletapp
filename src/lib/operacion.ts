@@ -16,6 +16,27 @@ export interface EnvioOperacion extends DbShipment {
 export interface CotizacionOperacion extends DbQuote {
   embarcador: { nombre: string; empresa: string } | null
   price_breakdown: Record<string, unknown> | null
+  aprobada_por: string | null
+  aprobada_en: string | null
+}
+
+/** Una fila de `envios_en_riesgo()`. La calcula el servidor, no el navegador. */
+export interface EnvioEnRiesgo {
+  shipment_id: string
+  ref_id: string | null
+  origin: string
+  dest: string
+  status: string
+  carrier: string | null
+  motivo: 'sin_camion' | 'compromiso_vencido' | 'sin_movimiento'
+  detalle: string
+  horas: number
+}
+
+export const MOTIVO_ALERTA: Record<EnvioEnRiesgo['motivo'], string> = {
+  sin_camion:         'Sin camión asignado',
+  compromiso_vencido: 'Pasó la fecha comprometida',
+  sin_movimiento:     'Sin reporte reciente',
 }
 
 /**
@@ -59,4 +80,53 @@ export const getCotizacionesOperacion = async (): Promise<CotizacionOperacion[]>
   const filas = (data ?? []) as CotizacionOperacion[]
   const perfiles = await pegarPerfiles(filas)
   return filas.map(f => ({ ...f, embarcador: comoEmbarcador(perfiles.get(f.user_id)) }))
+}
+
+/**
+ * Lo que va tarde. Ojo con lo que esta lista NO es: no sabe donde esta el
+ * camion, porque no hay rastreo. Sólo sabe lo que no ha pasado — nadie asignó
+ * unidad, se venció la fecha, nadie reportó. Presentarla como "alertas de
+ * rastreo" sería la misma mentira que el CFDI falso.
+ */
+export const getEnviosEnRiesgo = async (): Promise<EnvioEnRiesgo[]> => {
+  const { data, error } = await supabase.rpc('envios_en_riesgo')
+  if (error) throw error
+  return (data ?? []) as EnvioEnRiesgo[]
+}
+
+/**
+ * Aprueba una cotizacion y la libera al embarcador. `precioFinal` en null deja
+ * el precio sugerido por el servidor; si lo cambias, el servidor exige nota.
+ */
+export const aprobarCotizacion = async (
+  cotizacionId: string,
+  precioFinal?: number | null,
+  nota?: string,
+) => {
+  const { data, error } = await supabase.rpc('aprobar_cotizacion', {
+    cotizacion: cotizacionId,
+    precio_final: precioFinal ?? null,
+    nota: nota?.trim() || null,
+  })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export const rechazarCotizacion = async (cotizacionId: string, motivo: string) => {
+  const { data, error } = await supabase.rpc('rechazar_cotizacion', {
+    cotizacion: cotizacionId,
+    motivo,
+  })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+/** Fecha de entrega comprometida. Es la que dispara la alerta de retraso. */
+export const fijarCompromiso = async (envioId: string, cuando: string | null) => {
+  const { data, error } = await supabase.rpc('fijar_compromiso', {
+    envio_id: envioId,
+    cuando,
+  })
+  if (error) throw new Error(error.message)
+  return data
 }

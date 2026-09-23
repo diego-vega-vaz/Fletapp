@@ -42,31 +42,53 @@ Fecha límite: 31 de diciembre de 2026.
 
 ## Estado real — no confíes en la landing
 
+Última revisión: 23 sep 2026.
+
 ### Ya está hecho y verificado en producción
 
 - CFDI falso eliminado. `invoices.uuid_cfdi` ya no tiene default; el folio lo
   escribe sólo el servidor con la respuesta del PAC.
 - Toda la app en pesos. Un solo formateador: `fmtMXN` en `src/data/mockData.ts`,
   locale `es-MX`. `plans.ts` lo reexporta. **No crees un segundo formateador.**
-- RLS cerrado: ninguna tabla acepta `UPDATE` ni `DELETE` desde el navegador,
-  salvo el perfil propio.
+- RLS cerrado: sólo quedan tres políticas de escritura desde el navegador
+  (perfil propio, tickets propios, mensajes de ticket propios). Nada de dinero.
+- **Edge Function `cotizar`**: el precio lo calcula y lo guarda el servidor.
+  La aritmética vive en `supabase/functions/cotizar/calculo.ts`, aparte del
+  handler, para poder probarla sin levantar nada.
+- **Roles** en tabla propia (`user_roles`: operador / embarcador /
+  transportista), para que nadie se auto-ascienda editando su perfil. Todo
+  movimiento pasa por RPC: `mover_envio`, `asignar_unidad`.
+- **Bitácora** `shipment_events`: cada movimiento con autor y fecha.
+- **Lado transportista**: `carriers`, `vehicles`, `drivers`,
+  `carrier_documents` y el catálogo `document_types`. Bucket privado
+  `carrier-docs`. `verificar_transportista()` falla y **nombra el papel que
+  falta**; un documento vencido vuelve a contar como faltante.
+- **Aprobación humana de cotizaciones**: nacen en `por_aprobar`. El operador
+  aprueba (puede ajustar el precio, y si lo cambia el servidor le exige nota) o
+  rechaza con motivo. `accept_quote` sólo acepta las aprobadas.
+- **Alertas de lo que va tarde**: `envios_en_riesgo()`. Tres motivos, todos
+  ausencias comprobables: sin camión a las 24 h, `compromiso_en` vencido, sin
+  movimiento en la bitácora en 24 h. No inventa posición.
+- **Pruebas**: 16 de Playwright, guardia de honestidad sobre el bundle, y en
+  SQL `tests/rls.sql`, `tests/carriers.sql`, `tests/carriers-expediente.sql`,
+  `tests/cotizaciones-aprobacion.sql`. CI en GitHub Actions en cada push.
 
 ### No existe, aunque la interfaz lo sugiera
 
-1. **Pagos.** No hay pasarela ni webhook.
+1. **Pagos.** No hay pasarela ni webhook. `recordPayment()` está roto a
+   propósito (ver abajo).
 2. **CFDI real.** Falta PAC y Carta Porte 3.1.
-3. **Precio real.** `calcPrice()` en `CotizacionPage.tsx` es contenedores ×
-   $1,600 + $350 de casetas. Sin distancia, sin ruta, sin costo de
-   transportista.
+3. **Precio real.** `calculo.ts` sigue siendo contenedores × $1,600 + $350 de
+   casetas. Ya vive en el servidor y ya lo revisa un humano, pero **las cifras
+   siguen siendo de relleno**. Se sustituyen en Fase 5 con el tarifario real.
 4. **Rastreo.** `progress` es un número que nadie actualiza. El mapa es un SVG
-   con coordenadas fijas de CDMX–Monterrey.
-5. **Lado transportista.** No hay tablas de carriers, unidades ni operadores.
-   Es la mitad del marketplace que falta.
-6. **Backend.** Todo corre en el navegador con la anon key. No hay Edge
-   Functions.
-7. **Multiusuario.** Todo cuelga de `user_id`; no hay organizaciones ni roles.
-
-Tampoco hay pruebas, ni staging, ni monitoreo.
+   con coordenadas fijas de CDMX–Monterrey. Las alertas NO son rastreo.
+5. **Panel del transportista.** No hay acceso de transportista: el operador
+   carga sus papeles por ellos. Depende de decidir la figura fiscal.
+6. **Multiusuario.** Todo cuelga de `user_id`; hay roles pero no
+   organizaciones. Diferido a propósito hasta saber la figura fiscal.
+7. **Staging, monitoreo y respaldos probados.** Las migraciones se aplican
+   directo a producción. Es una apuesta consciente, no un olvido.
 
 ## Trampas que ya costaron caro
 
@@ -110,10 +132,14 @@ npm run dev
 
 ## Plan
 
-7 fases en 16 semanas. Fase 0 (decisiones y legal) cerrada del lado técnico.
-Sigue **Fase 1 · Fundación técnica**: Edge Functions, mover `calcPrice` al
-servidor, modelo de organizaciones y roles, staging, Sentry, pruebas
-end-to-end con Playwright, respaldos verificados.
+7 fases en 16 semanas. Al 23 de septiembre: Fase 0 al 71%, Fase 1 al 57%
+(faltan staging, Sentry y respaldos), Fase 2 con las tareas 1, 2, 3 y 5
+cerradas.
+
+**Lo que bloquea de verdad no es código.** Sin movimiento desde el 15 de
+septiembre: la figura fiscal (¿FleetApp asume el flete o sólo conecta?), el
+PAC, la pasarela de pago y la tarifa real de un corredor. Las cuatro son
+requisito de entrada de la Fase 3, y las cuatro dependen de Quique.
 
 El detalle vive en la hoja de cálculo del proyecto, no en el repo.
 

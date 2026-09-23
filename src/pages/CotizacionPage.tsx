@@ -216,7 +216,7 @@ function Step4({ data, price, precioError, set }: { data: FormData; price: Desgl
             {price.customs > 0 && <PriceRow label="Aduanas" value={price.customs} />}
             <PriceRow label="Subtotal" value={price.subtotal} />
             <PriceRow label={`IVA (16%)`} value={price.iva} />
-            <PriceRow label="TOTAL" value={price.total} total />
+            <PriceRow label="TOTAL ESTIMADO" value={price.total} total />
             </>
             )}
             <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--blue-50)', borderRadius: 8, fontSize: 12.5, color: 'var(--primary)', display: 'flex', gap: 6 }}>
@@ -225,7 +225,8 @@ function Step4({ data, price, precioError, set }: { data: FormData; price: Desgl
             </div>
           </div>
           <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-faint)' }}>
-            Válido hasta: Hoy a las 5:00 PM
+            Este precio es un estimado. Una persona lo revisa antes de confirmártelo;
+            cuando quede listo lo verás en Cotizaciones y ahí lo aceptas.
           </div>
         </div>
       </div>
@@ -316,7 +317,8 @@ export function CotizacionPage({ navigate, toast }: Props) {
     setSubmitting(true)
     try {
       const { quote } = await cotizar(payload())
-      toast({ type: 'success', title: 'Cotización enviada', msg: `${quote?.ref_id} creada · revísala en Cotizaciones` })
+      toast({ type: 'success', title: 'Cotización enviada',
+              msg: `${quote?.ref_id} quedó en revisión. Te avisamos cuando esté lista.` })
       setTimeout(() => navigate('cotizaciones'), 900)
     } catch (e) {
       toast({ type: 'error', title: 'Error al crear cotización', msg: (e as Error).message })
