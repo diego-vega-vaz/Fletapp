@@ -12,17 +12,18 @@ interface AppShellProps {
   onLogout: () => void
   onNew: () => void
   esOperador?: boolean
+  esTransportista?: boolean
   crumbs?: Crumb[] | null
   narrow?: boolean
   children: React.ReactNode
 }
 
-export function AppShell({ route, navigate, user, onLogout, onNew, crumbs, narrow, esOperador, children }: AppShellProps) {
+export function AppShell({ route, navigate, user, onLogout, onNew, crumbs, narrow, esOperador, esTransportista, children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
     <div className="app">
-      <Sidebar route={route} navigate={(r) => navigate(r)} collapsed={collapsed} setCollapsed={setCollapsed} user={user} esOperador={esOperador} />
+      <Sidebar route={route} navigate={(r) => navigate(r)} collapsed={collapsed} setCollapsed={setCollapsed} user={user} esOperador={esOperador} esTransportista={esTransportista} />
       <div className="main">
         <Topbar crumbs={crumbs} navigate={(r) => navigate(r)} onLogout={onLogout} user={user} onNew={onNew} />
         <div className={`content ${narrow ? 'narrow' : ''}`}>{children}</div>

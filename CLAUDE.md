@@ -42,7 +42,7 @@ Fecha límite: 31 de diciembre de 2026.
 
 ## Estado real — no confíes en la landing
 
-Última revisión: 23 sep 2026.
+Última revisión: 25 sep 2026.
 
 ### Ya está hecho y verificado en producción
 
@@ -69,9 +69,15 @@ Fecha límite: 31 de diciembre de 2026.
 - **Alertas de lo que va tarde**: `envios_en_riesgo()`. Tres motivos, todos
   ausencias comprobables: sin camión a las 24 h, `compromiso_en` vencido, sin
   movimiento en la bitácora en 24 h. No inventa posición.
+- **Acceso del transportista**: el operador genera un código de 8 caracteres
+  (`invitar_transportista`), el transportista lo canjea una vez
+  (`canjear_invitacion`) y su cuenta queda ligada a `carriers.user_id`. Ve
+  sólo sus envíos por RLS y reporta avance con `reportar_avance` (salí, voy en
+  camino, llegué, entregué). **No ve el precio del flete.**
 - **Pruebas**: 16 de Playwright, guardia de honestidad sobre el bundle, y en
   SQL `tests/rls.sql`, `tests/carriers.sql`, `tests/carriers-expediente.sql`,
-  `tests/cotizaciones-aprobacion.sql`. CI en GitHub Actions en cada push.
+  `tests/cotizaciones-aprobacion.sql`, `tests/transportista-acceso.sql`.
+  CI en GitHub Actions en cada push.
 
 ### No existe, aunque la interfaz lo sugiera
 
@@ -83,8 +89,10 @@ Fecha límite: 31 de diciembre de 2026.
    siguen siendo de relleno**. Se sustituyen en Fase 5 con el tarifario real.
 4. **Rastreo.** `progress` es un número que nadie actualiza. El mapa es un SVG
    con coordenadas fijas de CDMX–Monterrey. Las alertas NO son rastreo.
-5. **Panel del transportista.** No hay acceso de transportista: el operador
-   carga sus papeles por ellos. Depende de decidir la figura fiscal.
+5. **Marketplace abierto.** El transportista ya entra y reporta avance, pero
+   NO hay "carga disponible" que pueda aceptar, ni ve su tarifa. Las dos cosas
+   dependen de la figura fiscal y del tarifario. Los papeles los sigue
+   cargando el operador por ellos.
 6. **Multiusuario.** Todo cuelga de `user_id`; hay roles pero no
    organizaciones. Diferido a propósito hasta saber la figura fiscal.
 7. **Staging, monitoreo y respaldos probados.** Las migraciones se aplican
@@ -134,7 +142,7 @@ npm run dev
 
 7 fases en 16 semanas. Al 23 de septiembre: Fase 0 al 71%, Fase 1 al 57%
 (faltan staging, Sentry y respaldos), Fase 2 con las tareas 1, 2, 3 y 5
-cerradas.
+cerradas y la 4 a medias.
 
 **Lo que bloquea de verdad no es código.** Sin movimiento desde el 15 de
 septiembre: la figura fiscal (¿FleetApp asume el flete o sólo conecta?), el

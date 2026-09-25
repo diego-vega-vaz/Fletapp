@@ -28,6 +28,8 @@ export interface Carrier {
   email: string | null
   estatus: EstatusVerificacion
   notas: string | null
+  /** Cuenta vinculada. null = todavia no canjea su codigo de invitacion. */
+  user_id: string | null
   verificado_en: string | null
   created_at: string
 }

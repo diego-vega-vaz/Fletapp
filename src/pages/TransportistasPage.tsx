@@ -21,6 +21,7 @@ import {
   ESTATUS_CARRIER,
   type Carrier, type Vehicle, type Driver, type TipoDocumento, type Documento, type Faltante,
 } from '../lib/carriers'
+import { invitarTransportista } from '../lib/roles'
 
 interface Props {
   toast: (t: { type: string; title: string; msg?: string }) => void
@@ -286,6 +287,20 @@ function Expediente({ carrier, tipos, onClose, onCambio, toast }: {
     } finally { setOcupado(false) }
   }
 
+  const [invitacion, setInvitacion] = useState<string | null>(null)
+
+  // El acceso del transportista se entrega por codigo, no buscando su correo
+  // en la tabla de usuarios. Un RPC que busca cuentas por email convierte la
+  // lista de usuarios en un directorio consultable.
+  const invitar = async () => {
+    setOcupado(true)
+    try {
+      setInvitacion(await invitarTransportista(carrier.id))
+    } catch (e) {
+      toast({ type: 'error', title: 'No se pudo generar el código', msg: e instanceof Error ? e.message : '' })
+    } finally { setOcupado(false) }
+  }
+
   const verificar = async () => {
     setOcupado(true)
     try {
@@ -337,6 +352,9 @@ function Expediente({ carrier, tipos, onClose, onCambio, toast }: {
       )}
       <Button variant="secondary" icon="truck" onClick={() => setVista('unidad')}>Unidad</Button>
       <Button variant="secondary" icon="user" onClick={() => setVista('conductor')}>Operador</Button>
+      {!carrier.user_id && (
+        <Button variant="secondary" icon="share" onClick={invitar} loading={ocupado}>Invitar</Button>
+      )}
       <Button icon="checkCircle" onClick={verificar} loading={ocupado}
         disabled={carrier.estatus === 'verificado' && faltantes.length === 0}>
         Verificar
@@ -379,6 +397,24 @@ function Expediente({ carrier, tipos, onClose, onCambio, toast }: {
           <KVRow label="Contacto" value={carrier.contacto || '—'} />
           <KVRow label="Teléfono" value={carrier.telefono || '—'} />
           {carrier.notas && <KVRow label="Notas" value={carrier.notas} />}
+
+          {invitacion && (
+            <div style={{ marginTop: 18, padding: 12, borderRadius: 10, background: 'var(--blue-50)' }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>
+                Código de invitación. Mándaselo por WhatsApp; lo escribe una sola vez
+                al entrar y su cuenta queda ligada a esta empresa. Vence en 7 días.
+              </div>
+              <div className="mono" style={{ fontSize: 24, fontWeight: 750, letterSpacing: 4, color: 'var(--text-strong)' }}>
+                {invitacion}
+              </div>
+            </div>
+          )}
+
+          {carrier.user_id && (
+            <div style={{ marginTop: 18, padding: 12, borderRadius: 10, background: 'var(--green-50)', fontSize: 13 }}>
+              Este transportista ya tiene cuenta y ve sus viajes asignados.
+            </div>
+          )}
 
           <div style={{
             marginTop: 18, padding: 12, borderRadius: 10,

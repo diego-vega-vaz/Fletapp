@@ -29,6 +29,8 @@ interface SidebarProps {
   /** Solo el operador ve la consola. La RLS ya lo bloquea en la base;
    *  esconder el item es cortesia, no seguridad. */
   esOperador?: boolean
+  /** El transportista ve sus viajes y nada mas del lado del embarcador. */
+  esTransportista?: boolean
   route: Route
   navigate: (r: Route) => void
   collapsed: boolean
@@ -36,13 +38,19 @@ interface SidebarProps {
   user: User
 }
 
-export function Sidebar({ route, navigate, collapsed, setCollapsed, user, esOperador }: SidebarProps) {
+export function Sidebar({ route, navigate, collapsed, setCollapsed, user, esOperador, esTransportista }: SidebarProps) {
   const items = esOperador
     ? [{ section: 'Operacion' },
        { id: 'operacion', label: 'Consola', icon: 'truck' },
        { id: 'transportistas', label: 'Transportistas', icon: 'building' },
        ...NAV]
-    : NAV
+    : esTransportista
+      ? [{ section: 'Transportista' },
+         { id: 'misviajes', label: 'Mis viajes', icon: 'truck' },
+         { section: 'Cuenta' },
+         { id: 'soporte',  label: 'Soporte',       icon: 'chat' },
+         { id: 'config',   label: 'Configuración', icon: 'settings' }]
+      : NAV
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-top">

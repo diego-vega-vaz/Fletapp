@@ -20,10 +20,12 @@ import { SoportePage } from './pages/SoportePage'
 import { TicketDetailPage } from './pages/TicketDetailPage'
 import { ConfigPage } from './pages/ConfigPage'
 import { ReportesPage } from './pages/ReportesPage'
-import { OperacionPage } from './pages/OperacionPage'
+import { OperacionPage } from './pages/OperacionPage'
+
 import { TransportistasPage } from './pages/TransportistasPage'
+import { MisViajesPage } from './pages/MisViajesPage'
 import { getProfile } from './lib/db'
-import { esOperador as consultarRol } from './lib/roles'
+import { esOperador as consultarRol, miCarrier } from './lib/roles'
 import type { Plan } from './data/plans'
 import type { Route, NavParams, User, PublicRoute } from './types'
 
@@ -38,6 +40,10 @@ const [params, setParams] = useState<NavParams | null>(null)
 const [user, setUser] = useState<User>({ name: '', company: '', email: '' })
 const [plan, setPlan] = useState<string | null>('free')
 const [operador, setOperador] = useState(false)
+const [carrier, setCarrier] = useState<string | null>(null)
+// Sube de valor cuando el transportista canjea su codigo: el rol cambio en la
+// base y hay que volver a preguntarlo sin obligarlo a cerrar sesion.
+const [recargarRol, setRecargarRol] = useState(0)
 const [toasts, setToasts] = useState<Toast[]>([])
 
 useEffect(() => {
@@ -68,6 +74,7 @@ setAuthed(true)
 } else {
 setAuthed(false)
 setOperador(false)
+setCarrier(null)
 }
 })
 
@@ -88,8 +95,13 @@ let vivo = true
 consultarRol()
 .then(r => { if (vivo) setOperador(r) })
 .catch(() => { if (vivo) setOperador(false) })
+// El carrier vinculado decide si aparece "Mis viajes". Igual que el rol: si
+// la consulta falla, se asume que no hay carrier.
+miCarrier()
+.then(c => { if (vivo) setCarrier(c) })
+.catch(() => { if (vivo) setCarrier(null) })
 return () => { vivo = false }
-}, [authed])
+}, [authed, recargarRol])
 
 const navigate = useCallback((r: Route, p: NavParams | null = null) => {
 setRoute(r)
@@ -107,6 +119,7 @@ const logout = async () => {
 await supabase.auth.signOut()
 setAuthed(false)
 setOperador(false)
+setCarrier(null)
 setRoute('dashboard')
 }
 
@@ -160,13 +173,15 @@ case 'operacion': return operador
 case 'transportistas': return operador
 ? <TransportistasPage toast={toast} />
 : <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
+case 'misviajes': return <MisViajesPage carrierId={carrier} toast={toast}
+onVinculado={() => setRecargarRol(n => n + 1)} />
 default: return <DashboardPage navigate={navigate} user={user} onPay={id => navigate('pago', { id })} />
 }
 })()
 
 return (
 <>
-<AppShell route={route} navigate={navigate} user={user} onLogout={logout} onNew={() => navigate('cotizacion')} esOperador={operador}>
+<AppShell route={route} navigate={navigate} user={user} onLogout={logout} onNew={() => navigate('cotizacion')} esOperador={operador} esTransportista={carrier !== null}>
 {page}
 </AppShell>
 
