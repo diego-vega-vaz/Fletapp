@@ -178,8 +178,13 @@ que no, medido, no supuesto.
 - Cada llamada es un sandbox nuevo: **no hay procesos en segundo plano** entre
   llamadas, `nohup` no sirve.
 - Borrar archivos requiere permiso explícito del usuario una vez por sesión.
-- **No tiene credenciales de git.** `git push` falla con "could not read
-  Username". Empujar es del lado de Diego, en Windows.
+- **Desde el 26 sep sí empuja.** El remoto lleva un token fine-grained de
+  GitHub (`fleetapp-push`, sólo el repo Fletapp, sólo Contents, **caduca el 24
+  de diciembre de 2026**) guardado en `.git/config`. Cuando los push empiecen a
+  fallar con 403, es eso: hay que renovar el token, no hay nada roto.
+  El token vive en texto plano en `.git/config`, que no se versiona. **Nunca lo
+  imprimas en una respuesta ni lo pegues en un archivo del repo**; para mostrar
+  el remoto, filtra: `git remote get-url origin | sed -E 's#//[^@]*@#//***@#'`.
 
 **El contenedor de la nube** (la sesión de Cowork): ahí sí compila, prueba y
 saca capturas. Chromium viene instalado. El ciclo probado:
@@ -194,5 +199,10 @@ bash scripts/empaquetar-fuente.sh     # en la VM, genera fuente.tar.gz (~1.6 MB)
 credenciales de git y sin límite de tiempo por comando. Ahí va el ciclo de
 desarrollo largo y el `git push`.
 
-Regla corta: **la base de datos y la verificación, en la nube; los archivos y
-el git, en la VM; correr la app y empujar, en Windows.**
+Regla corta: **la base de datos y la verificación, en la nube; los archivos, el
+git y el push, en la VM; `npm run dev`, en Windows.**
+
+**Regla de oro mientras no haya staging:** una migración va a producción en el
+momento en que se aplica, pero el frontend espera al push. Migración y push el
+mismo día, o la migración espera. El 23 de septiembre eso costó dos días con la
+base exigiendo aprobación de cotizaciones y la app desplegada sin saberlo.
