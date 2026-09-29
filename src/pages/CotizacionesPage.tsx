@@ -93,7 +93,7 @@ export function CotizacionesPage({ navigate }: CotizacionesPageProps) {
   }, [quotes, search])
 
   function handleExport() {
-    exportToCsv('cotizaciones-fleetapp', [
+    exportToCsv('cotizaciones-fleetweb', [
       { header: 'ID', value: q => q.ref_id },
       { header: 'Origen', value: q => q.origin },
       { header: 'Destino', value: q => q.dest },

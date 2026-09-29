@@ -2,7 +2,7 @@
  * Guardia de honestidad — se corre sobre el bundle YA COMPILADO.
  *
  * Por que existe:
- * FleetApp presentaba como reales tres cosas que no lo eran (folios fiscales
+ * FleetWeb presentaba como reales tres cosas que no lo eran (folios fiscales
  * inventados, descargas de PDF y XML que no descargaban nada, y una CLABE de
  * ejemplo como cuenta de cobro). Se corrigieron en Fase 0. Este script existe
  * para que no vuelvan sin que nadie se entere.
@@ -42,7 +42,9 @@ const PROHIBIDO = [
   { patron: 'Pagos protegidos',
     porque: 'No hay pasarela de pago. Nada esta protegido todavia.' },
   { patron: 'FletApp',
-    porque: 'La marca se escribe FleetApp. Se decidio el 22 sep 2026. Dos grafias del mismo negocio en la misma app es como se ve un proyecto sin dueno.' },
+    porque: 'Nombre viejo. La marca se llama FleetWeb desde el 29 sep 2026, por peticion de Quique. Dos grafias del mismo negocio en la misma app es como se ve un proyecto sin dueno.' },
+  { patron: 'FleetApp',
+    porque: 'Nombre viejo. La marca se llama FleetWeb desde el 29 sep 2026, por peticion de Quique.' },
   { patron: 'tiempo real',
     porque: 'No hay rastreo en vivo. Quique lo dejo para despues el 15 sep; el avance de un envio lo reporta el operador a mano y queda en shipment_events. Prometer tiempo real es lo mismo que el CFDI falso.' },
   { patron: 'Cobros protegidos',

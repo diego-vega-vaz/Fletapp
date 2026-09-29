@@ -1,4 +1,4 @@
-# Bitácora de decisiones técnicas — FleetApp
+# Bitácora de decisiones técnicas — FleetWeb
 
 Por qué se eligió cada cosa. En cuatro meses nadie se va a acordar, y el
 cliente sí va a preguntar.
@@ -74,13 +74,61 @@ en `src/data/mockData.ts`. `plans.ts` lo reexporta en vez de tener el suyo.
 (`Intl.NumberFormat`, sin decimales) y `CotizacionPage` importa de ambos
 módulos. El rename simple no habría compilado.
 
-**Por qué.** Todo en FleetApp se cobra en pesos. Dos formateadores con el mismo
+**Por qué.** Todo en FleetWeb se cobra en pesos. Dos formateadores con el mismo
 nombre y salidas distintas es una discrepancia esperando ocurrir en una
 factura.
 
 **Pendiente que esto NO resuelve.** Los importes siguen siendo de relleno.
 $350 de casetas CDMX–Monterrey y $40/hora de demora están fuera de la realidad
 del mercado. Se corrigen en Fase 5 con el tarifario real del corredor.
+
+---
+
+## 2026-09-29 · La marca pasa de FleetApp a FleetWeb
+
+**Decisión.** Quique pidió el cambio de nombre. Toda la aplicación, la base de
+datos y la documentación dicen ahora **FleetWeb**. Es el segundo cambio de
+nombre: el 22 de septiembre se había pasado de FletApp a FleetApp.
+
+**Qué se cambió.** 47 archivos. Texto visible en las 20 pantallas, el título
+del navegador, el logotipo (la palabra estaba partida en dos `<span>` con
+pesos distintos y el reemplazo automático no la alcanzaba), los nombres de los
+CSV que exporta la app, los correos de contacto, la llave de `localStorage` del
+onboarding, los comentarios del código y el default de `tickets.agent_name` en
+producción, que va como migración.
+
+**Lo que NO se cambió, a propósito.** El repositorio sigue llamándose
+`Fletapp`, la carpeta local sigue siendo `Documents\Fletapp`, el dominio de
+producción sigue siendo `fletapp-nine.vercel.app` y el token de push sigue
+siendo `fleetapp-push`. Son identificadores de infraestructura, no la marca:
+renombrarlos rompe el remoto de git, el enlace con Vercel y el despliegue
+continuo, a cambio de nada que el usuario vea. Se cambian cuando se compre el
+dominio propio, en un movimiento planeado y no de pasada.
+
+`chats/` tampoco se tocó. Es el registro de conversaciones tal como
+ocurrieron; reescribirlo sería falsificar un histórico.
+
+**Hallazgo de paso.** El default de `tickets.agent_name` en la base real decía
+`'Soporte FletApp'`, no `'Soporte FleetApp'`. Las dos líneas de rebrand que
+están escritas en `supabase/plans-setup.sql` desde el 22 de septiembre **nunca
+se aplicaron a la base**. Es el mismo patrón que los `revoke` de la Fase 0:
+SQL escrito en un archivo suelto que nadie ejecutó. Por eso este cambio va como
+migración numerada y verificada por md5 contra
+`supabase_migrations.schema_migrations`, y no como otra línea en un `.sql` de
+instalación.
+
+**La guardia de honestidad ahora lo vigila.** `scripts/verificar-verdad.mjs`
+prohíbe `FletApp` y `FleetApp` en el bundle compilado. Si un nombre viejo
+regresa a cualquier pantalla, CI se cae. Antes la regla prohibía `FletApp` y
+exigía `FleetApp`; el reemplazo automático la había invertido hasta prohibir la
+marca nueva, lo cual habría tumbado todos los builds. Se corrigió a mano.
+
+**Riesgo que no me corresponde cerrar.** Nadie ha verificado que "FleetWeb"
+esté libre en MARCANET del IMPI, clases 39 y 42, ni que el dominio esté
+disponible. Es el mismo problema que ya tenía "FleetApp": un nombre genérico en
+inglés es difícil de registrar como marca. Dos cambios de nombre en ocho días
+salen baratos hoy y caros cuando haya facturas timbradas y clientes que
+conocen el nombre. **Conviene hacer la búsqueda antes del tercero.**
 
 ---
 

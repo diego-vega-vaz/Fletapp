@@ -167,7 +167,7 @@ export function RegisterPage({ onBack, onGo }: RegisterPageProps) {
 
         <div style={{ borderTop: '1px solid var(--border-soft)', marginTop: 20, paddingTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
           {[
-            { label: 'Soporte', action: () => window.open('mailto:soporte@fleetapp.mx', '_blank') },
+            { label: 'Soporte', action: () => window.open('mailto:soporte@fleetweb.mx', '_blank') },
             { label: 'Términos', action: () => onGo('terminos') },
             { label: 'Privacidad', action: () => onGo('privacidad') },
           ].map(({ label, action }, i) => (

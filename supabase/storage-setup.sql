@@ -1,5 +1,5 @@
 -- ============================================================
--- FletApp — Almacenamiento de documentos por envío
+-- FleetWeb — Almacenamiento de documentos por envío
 -- Ejecutar en: Supabase Dashboard → SQL Editor → New query
 -- ============================================================
 

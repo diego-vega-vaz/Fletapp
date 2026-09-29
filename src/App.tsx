@@ -148,7 +148,7 @@ return (
 const onSelectPlan = (p: Plan) => {
 if (p.id === plan) return
 if (p.id === 'free') { toast({ type: 'info', title: 'Ya tienes acceso al plan Gratis' }); return }
-window.location.href = `mailto:ventas@fleetapp.mx?subject=${encodeURIComponent(`Quiero mejorar a ${p.name}`)}&body=${encodeURIComponent(`Hola, me interesa el plan ${p.name} para mi cuenta ${user.email}.`)}`
+window.location.href = `mailto:ventas@fleetweb.mx?subject=${encodeURIComponent(`Quiero mejorar a ${p.name}`)}&body=${encodeURIComponent(`Hola, me interesa el plan ${p.name} para mi cuenta ${user.email}.`)}`
 toast({ type: 'info', title: 'Pagos en línea — muy pronto', msg: `Te conectamos con ventas para activar ${p.name}.` })
 }
 

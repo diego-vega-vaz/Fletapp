@@ -5,5 +5,5 @@
 // quedo del prototipo. Se deja por si el flujo de bienvenida vuelve, pero si
 // en un mes sigue sin usarse, lo correcto es borrarlo.
 export function shouldShowOnboarding(email: string): boolean {
-  return !localStorage.getItem(`fleetapp_onboarding_${email}`)
+  return !localStorage.getItem(`fleetweb_onboarding_${email}`)
 }

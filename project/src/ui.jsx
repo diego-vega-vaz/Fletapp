@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — Base UI components (React)
+   FleetWeb — Base UI components (React)
    ============================================================ */
 const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
 

@@ -255,7 +255,7 @@ export const createTicket = async (t: {
   await supabase.from('ticket_messages').insert({
     ticket_id: data.id,
     is_user: false,
-    author_name: 'Soporte FleetApp',
+    author_name: 'Soporte FleetWeb',
     body: `Hola, hemos recibido tu ticket sobre "${t.subject}". Un agente te responderá pronto.`,
   })
   return data

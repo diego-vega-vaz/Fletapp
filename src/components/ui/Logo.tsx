@@ -17,7 +17,7 @@ export function Logo({ size = 24, light = false, markOnly = false }: LogoProps) 
       src="/logo-mark.png.jpg"
       width={boxSize}
       height={boxSize}
-      alt="FleetApp"
+      alt="FleetWeb"
       style={{ flexShrink: 0, display: 'block', borderRadius: Math.round(boxSize * 0.22) }}
     />
   )
@@ -28,7 +28,7 @@ export function Logo({ size = 24, light = false, markOnly = false }: LogoProps) 
     <span className="logo" style={{ fontSize: size * 0.9, color: textColor }}>
       {mark}
       <span>
-        <span style={{ fontWeight: 800 }}>Fleet</span><span style={{ fontWeight: 300 }}>App</span>
+        <span style={{ fontWeight: 800 }}>Fleet</span><span style={{ fontWeight: 300 }}>Web</span>
       </span>
     </span>
   )

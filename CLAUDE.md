@@ -1,9 +1,9 @@
-# FleetApp — contexto para Claude Code
+# FleetWeb — contexto para Claude Code
 
 ## Qué es esto
 
 Un intermediario digital de fletes terrestres en México. Un embarcador pide
-precio, FleetApp le consigue un camión verificado, cobra, le paga al
+precio, FleetWeb le consigue un camión verificado, cobra, le paga al
 transportista y se queda con la comisión.
 
 **Modelo de negocio: marketplace / brokerage. Se cobra COMISIÓN POR FLETE, no
@@ -145,7 +145,7 @@ npm run dev
 cerradas y la 4 a medias.
 
 **Lo que bloquea de verdad no es código.** Sin movimiento desde el 15 de
-septiembre: la figura fiscal (¿FleetApp asume el flete o sólo conecta?), el
+septiembre: la figura fiscal (¿FleetWeb asume el flete o sólo conecta?), el
 PAC, la pasarela de pago y la tarifa real de un corredor. Las cuatro son
 requisito de entrada de la Fase 3, y las cuatro dependen de Quique.
 

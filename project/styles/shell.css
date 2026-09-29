@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — App shell (sidebar / topbar)
+   FleetWeb — App shell (sidebar / topbar)
    ============================================================ */
 .app { display: flex; min-height: 100vh; background: var(--canvas); }
 

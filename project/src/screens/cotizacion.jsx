@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — Nueva Cotización (wizard 4 pasos)
+   FleetWeb — Nueva Cotización (wizard 4 pasos)
    ============================================================ */
 const { useState: useStateQ, useMemo: useMemoQ } = React;
 

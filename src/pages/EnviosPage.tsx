@@ -76,7 +76,7 @@ export function EnviosPage({ navigate, onPay }: EnviosPageProps) {
   }, [shipments, tab, search, statusFilter])
 
   function handleExport() {
-    exportToCsv('envios-fleetapp', [
+    exportToCsv('envios-fleetweb', [
       { header: 'ID', value: s => s.ref_id },
       { header: 'Origen', value: s => s.origin },
       { header: 'Destino', value: s => s.dest },

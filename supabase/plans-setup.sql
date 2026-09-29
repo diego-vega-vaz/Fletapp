@@ -1,5 +1,5 @@
 -- ============================================================
--- FleetApp — Planes de suscripción
+-- FleetWeb — Planes de suscripción
 -- Ejecutar en: Supabase Dashboard → SQL Editor → New query
 -- ============================================================
 
@@ -33,6 +33,6 @@ end;
 $$;
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
 
--- ── Rebrand: FletApp → FleetApp en datos existentes ───────────
-alter table tickets alter column agent_name set default 'Soporte FleetApp';
-update tickets set agent_name = 'Soporte FleetApp' where agent_name = 'Soporte FletApp';
+-- ── Rebrand: FleetWeb → FleetWeb en datos existentes ───────────
+alter table tickets alter column agent_name set default 'Soporte FleetWeb';
+update tickets set agent_name = 'Soporte FleetWeb' where agent_name = 'Soporte FleetWeb';

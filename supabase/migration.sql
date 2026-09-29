@@ -1,5 +1,5 @@
 -- ============================================================
--- FletApp — Schema completo
+-- FleetWeb — Schema completo
 -- Ejecutar en: Supabase Dashboard → SQL Editor → New query
 -- ============================================================
 
@@ -100,7 +100,7 @@ create table if not exists tickets (
   status        text default 'open',   -- open | in_progress | resolved | closed
   shipment_ref  text,
   description   text,
-  agent_name    text default 'Soporte FleetApp',
+  agent_name    text default 'Soporte FleetWeb',
   created_at    timestamptz default now()
 );
 

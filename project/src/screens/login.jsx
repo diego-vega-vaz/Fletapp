@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — Login screen
+   FleetWeb — Login screen
    ============================================================ */
 const { useState: useStateLogin } = React;
 
@@ -82,7 +82,7 @@ function LoginScreen({ onLogin }) {
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 40, fontSize: 12, color: 'var(--text-faint)' }}>
             <a style={{ cursor: 'pointer' }}>Soporte</a><span>·</span><a style={{ cursor: 'pointer' }}>Términos</a><span>·</span><a style={{ cursor: 'pointer' }}>Privacidad</a>
           </div>
-          <div style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--gray-400)', marginTop: 14 }}>© 2026 FletApp. Todos los derechos reservados.</div>
+          <div style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--gray-400)', marginTop: 14 }}>© 2026 FleetWeb. Todos los derechos reservados.</div>
         </form>
       </div>
     </div>

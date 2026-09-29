@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — Pagos & confirmación
+   FleetWeb — Pagos & confirmación
    ============================================================ */
 const { useState: useStateP } = React;
 
@@ -40,7 +40,7 @@ function PagosScreen({ navigate, params, toast }) {
               <PayMethod active={method === 'card'} onClick={() => setMethod('card')} icon="card" title="Tarjeta de crédito / débito" sub="Visa terminación 4242" />
               {method === 'card' && <CardDetail />}
               <PayMethod active={method === 'transfer'} onClick={() => setMethod('transfer')} icon="building" title="Transferencia bancaria (SPEI)" sub="CLABE 002154007000000 · Banamex" />
-              <PayMethod active={method === 'credit'} onClick={() => setMethod('credit')} icon="zap" title="Usar crédito FletApp" sub="Disponible: $5,000 USD" />
+              <PayMethod active={method === 'credit'} onClick={() => setMethod('credit')} icon="zap" title="Usar crédito FleetWeb" sub="Disponible: $5,000 USD" />
             </div>
           </Card>
 

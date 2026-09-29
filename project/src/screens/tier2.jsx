@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — Tier 2: Facturas & Billing, Detalle de Envío, Detalle de Ticket
+   FleetWeb — Tier 2: Facturas & Billing, Detalle de Envío, Detalle de Ticket
    ============================================================ */
 const { useState: useStateT2 } = React;
 
@@ -41,7 +41,7 @@ function FacturasScreen({ navigate, toast }) {
       <div className="grid-3" style={{ marginBottom: 22 }}>
         <BillCard icon="dollar" color="var(--orange-600)" bg="var(--orange-50)" label="Pendiente por pagar" value={fmtUSD(pending)} sub={`${INVOICES.filter(i => i.status === 'pending').length} facturas`} cta="Pagar ahora" onCta={() => navigate('pago', { id: 'RES-2026-00143' })} />
         <BillCard icon="checkCircle" color="var(--green-600)" bg="var(--green-50)" label="Pagado este mes" value={fmtUSD(paidMonth)} sub="3 facturas liquidadas" />
-        <BillCard icon="zap" color="var(--primary)" bg="var(--blue-50)" label="Crédito disponible" value="$5,000" sub="Línea FletApp · al corriente" />
+        <BillCard icon="zap" color="var(--primary)" bg="var(--blue-50)" label="Crédito disponible" value="$5,000" sub="Línea FleetWeb · al corriente" />
       </div>
 
       <div style={{ marginBottom: 18 }}><Tabs tabs={[{ id: 'facturas', label: 'Facturas', icon: 'fileText' }, { id: 'pagos', label: 'Historial de pagos', icon: 'card' }, { id: 'metodos', label: 'Métodos de pago', icon: 'building' }]} active={tab} onChange={setTab} /></div>

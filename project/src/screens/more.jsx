@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — Secondary screens: Envíos, Cotizaciones, Soporte, Config
+   FleetWeb — Secondary screens: Envíos, Cotizaciones, Soporte, Config
    ============================================================ */
 const { useState: useStateM } = React;
 
@@ -144,7 +144,7 @@ function SoporteScreen({ navigate, toast }) {
           <Card>
             <div className="section-title" style={{ fontSize: 14, marginBottom: 12 }}>Contacto directo</div>
             <ContactRow icon="phone" label="Teléfono" value="+52 55 1234 5678" />
-            <ContactRow icon="mail" label="Email" value="support@fletapp.mx" />
+            <ContactRow icon="mail" label="Email" value="support@fleetweb.mx" />
             <ContactRow icon="whatsapp" label="WhatsApp" value="+52 55 9876 5432" />
           </Card>
         </div>

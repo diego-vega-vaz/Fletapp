@@ -34,7 +34,7 @@ const features = [
 ]
 
 function done(email: string) {
-  localStorage.setItem(`fleetapp_onboarding_${email}`, '1')
+  localStorage.setItem(`fleetweb_onboarding_${email}`, '1')
 }
 
 export function OnboardingModal({ userName, userEmail, onCreateQuote, onDismiss }: OnboardingModalProps) {
@@ -73,7 +73,7 @@ export function OnboardingModal({ userName, userEmail, onCreateQuote, onDismiss 
           ¡Bienvenido, {firstName}!
         </h2>
         <p style={{ fontSize: 15, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6, marginBottom: 36 }}>
-          Tu cuenta está lista. Esto es lo que puedes hacer con FleetApp:
+          Tu cuenta está lista. Esto es lo que puedes hacer con FleetWeb:
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 36 }}>

@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — App router + Tweaks
+   FleetWeb — App router + Tweaks
    ============================================================ */
 const { useState: useStateApp, useEffect: useEffectApp } = React;
 
@@ -40,7 +40,7 @@ function applyTweaks(t) {
   r.setProperty('--r-card', rad.card); r.setProperty('--r-btn', rad.btn); r.setProperty('--r-input', rad.input); r.setProperty('--r-modal', rad.modal);
 }
 
-function FletAppRoot() {
+function FleetWebRoot() {
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [authed, setAuthed] = useStateApp(false);
   const [route, setRoute] = useStateApp('dashboard');
@@ -112,7 +112,7 @@ function FletTweaks({ tweaks, setTweak }) {
 }
 
 function MountApp() {
-  return <ToastProvider><FletAppRoot /></ToastProvider>;
+  return <ToastProvider><FleetWebRoot /></ToastProvider>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<MountApp />);

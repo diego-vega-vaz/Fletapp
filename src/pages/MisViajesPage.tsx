@@ -97,7 +97,7 @@ export function MisViajesPage({ carrierId, onVinculado, toast }: Props) {
       <div className="page-head">
         <div>
           <h1 className="page-title">Mis viajes</h1>
-          <p className="page-sub">Los envíos que FleetApp le asignó a tu empresa.</p>
+          <p className="page-sub">Los envíos que FleetWeb le asignó a tu empresa.</p>
         </div>
         <Button variant="secondary" icon="refresh" onClick={cargar} loading={cargando}>Actualizar</Button>
       </div>
@@ -191,7 +191,7 @@ function Vincular({ onVinculado, toast }: { onVinculado: () => void; toast: Prop
     <div className="page" style={{ maxWidth: 480, margin: '0 auto' }}>
       <h1 className="page-title">Vincula tu empresa</h1>
       <p className="page-sub" style={{ marginBottom: 20 }}>
-        FleetApp te dio un código de 8 caracteres. Escríbelo aquí una sola vez y
+        FleetWeb te dio un código de 8 caracteres. Escríbelo aquí una sola vez y
         esta cuenta queda ligada a tu empresa transportista.
       </p>
       <Card>

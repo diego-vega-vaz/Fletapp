@@ -1,5 +1,5 @@
 /* ============================================================
-   FletApp — Stylized route map (shared)
+   FleetWeb — Stylized route map (shared)
    ============================================================ */
 const { useState: useStateMap, useEffect: useEffectMap, useRef: useRefMap } = React;
 

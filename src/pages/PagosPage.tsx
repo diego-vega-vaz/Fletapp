@@ -55,7 +55,7 @@ export function PagosPage({ navigate, params, toast }: Props) {
     if (!shipment) return
     setProcessing(true)
     try {
-      const methodLabel = method === 'card' ? 'Visa ••••4242' : method === 'transfer' ? 'SPEI' : 'Crédito FleetApp'
+      const methodLabel = method === 'card' ? 'Visa ••••4242' : method === 'transfer' ? 'SPEI' : 'Crédito FleetWeb'
       await recordPayment(shipment.id, remaining, methodLabel)
       const ref = `TRX-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 90000 + 10000)}`
       setTxRef(ref)
@@ -86,7 +86,7 @@ export function PagosPage({ navigate, params, toast }: Props) {
     )
   }
 
-  const methodLabel = method === 'card' ? 'Visa ••••4242' : method === 'transfer' ? 'SPEI Banamex' : 'Crédito FleetApp'
+  const methodLabel = method === 'card' ? 'Visa ••••4242' : method === 'transfer' ? 'SPEI Banamex' : 'Crédito FleetWeb'
 
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
@@ -146,7 +146,7 @@ export function PagosPage({ navigate, params, toast }: Props) {
           {[
             { id: 'card' as const, label: 'Tarjeta de Crédito/Débito', icon: 'card', sub: 'Visa ••••4242' },
             { id: 'transfer' as const, label: 'Transferencia Bancaria', icon: 'building', sub: 'CLABE: 002154007000000 · Banamex' },
-            { id: 'credit' as const, label: 'Crédito FleetApp', icon: 'zap', sub: 'Disponible: $5,000 MXN' },
+            { id: 'credit' as const, label: 'Crédito FleetWeb', icon: 'zap', sub: 'Disponible: $5,000 MXN' },
           ].map(m => (
             <div
               key={m.id}

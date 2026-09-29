@@ -167,7 +167,7 @@ export function LoginPage({ onLogin, onRegister, onGo }: LoginPageProps) {
           <div style={{ padding: '20px 0 28px', textAlign: 'center', borderTop: '1px solid var(--border-soft)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 6 }}>
               {[
-                { label: 'Soporte', action: () => window.open('mailto:soporte@fleetapp.mx', '_blank') },
+                { label: 'Soporte', action: () => window.open('mailto:soporte@fleetweb.mx', '_blank') },
                 { label: 'Términos', action: () => onGo('terminos') },
                 { label: 'Privacidad', action: () => onGo('privacidad') },
               ].map(({ label, action }, i) => (
@@ -177,7 +177,7 @@ export function LoginPage({ onLogin, onRegister, onGo }: LoginPageProps) {
                 </span>
               ))}
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>© {new Date().getFullYear()} FleetApp. Todos los derechos reservados.</p>
+            <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>© {new Date().getFullYear()} FleetWeb. Todos los derechos reservados.</p>
           </div>
         </div>
       </div>
