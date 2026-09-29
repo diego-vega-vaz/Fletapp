@@ -34,3 +34,15 @@ dist-ssr
 fuente.tar.gz
 # Salidas de Claude, no son parte del proyecto
 Claude outputs/
+
+# Credenciales fiscales. El repositorio es PUBLICO: la llave privada del sello
+# digital de la empresa jamas debe llegar aqui. Viven como secretos del
+# servidor, no como archivos del proyecto.
+*.key
+*.cer
+*.pfx
+*.p12
+*.sdg
+*.req
+csd/
+sellos/

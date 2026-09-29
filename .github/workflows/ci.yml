@@ -16,6 +16,11 @@ jobs:
           node-version: 20
           cache: npm
 
+      # Antes que nada: que no haya una llave privada o un certificado en el
+      # repositorio. El repo es publico y esto no se arregla despues.
+      - name: Guardia de secretos
+        run: node scripts/verificar-secretos.mjs
+
       - run: npm ci
 
       # Un secreto que no existe llega como cadena vacia y el build compila
