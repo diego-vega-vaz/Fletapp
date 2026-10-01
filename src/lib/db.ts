@@ -137,11 +137,11 @@ export const getQuotes = async (): Promise<DbQuote[]> => {
 export interface DatosCotizacion {
   origin: string; origin_code: string; dest: string; dest_code: string
   cargo_type: string; containers: string; weight: string; cargo_desc: string
-  special: object; customs: string; operation: string
+  special: object
 }
 
 export interface DesglosePrecio {
-  base: number; tolls: number; special: number; customs: number
+  base: number; special: number
   subtotal: number; iva: number; total: number
   formula_version: string; moneda: string
 }

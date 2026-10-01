@@ -6,51 +6,67 @@ import {
 // La aritmetica del dinero es lo unico de este proyecto que no se puede
 // revisar a ojo. Estas pruebas corren sin red y sin base de datos.
 
-test('el desglose cuadra: subtotal + IVA = total, y subtotal incluye aduanas', () => {
-  const d = calcularPrecio({ containers: 2, special: { frozen: true }, customs: 'yes' })
+test('el desglose cuadra: subtotal + IVA = total', () => {
+  const d = calcularPrecio({ containers: 2, special: { frozen: true } })
   expect(d.base).toBe(3200)          // 2 x 1600
-  expect(d.tolls).toBe(350)
   expect(d.special).toBe(800)        // refrigerado
-  expect(d.customs).toBe(2500)
   // subtotal es la base gravable: TODO lo que se cobra antes de IVA.
-  expect(d.subtotal).toBe(6850)      // 3200 + 350 + 800 + 2500
-  expect(d.subtotal).toBe(d.base + d.tolls + d.special + d.customs)
-  expect(d.iva).toBe(1096)           // 16% de 6850, redondeado
+  expect(d.subtotal).toBe(4000)      // 3200 + 800
+  expect(d.subtotal).toBe(d.base + d.special)
+  expect(d.iva).toBe(640)            // 16% de 4000
   expect(d.total).toBe(d.subtotal + d.iva)
-  expect(d.total).toBe(7946)         // el total no cambia
+  expect(d.total).toBe(4640)
   expect(d.moneda).toBe('MXN')
   expect(d.formula_version).toBe(FORMULA_VERSION)
 })
 
 test('los recargos se suman, no se pisan', () => {
-  const uno = calcularPrecio({ containers: 1, special: { hazard: true }, customs: 'no' })
+  const uno = calcularPrecio({ containers: 1, special: { hazard: true } })
   const tres = calcularPrecio({
-    containers: 1, special: { frozen: true, hazard: true, oog: true }, customs: 'no',
+    containers: 1, special: { frozen: true, hazard: true, oog: true },
   })
   expect(uno.special).toBe(1200)
   expect(tres.special).toBe(800 + 1200 + 950)
 })
 
-test('sin aduanas no se cobra el cargo de aduanas', () => {
-  expect(calcularPrecio({ containers: 1, special: {}, customs: 'no' }).customs).toBe(0)
+// ── Lo que se quito el 1 oct 2026 y no debe volver solo ─────────────────
+
+test('el desglose ya no trae casetas ni aduanas', () => {
+  const d = calcularPrecio({ containers: 3, special: {} })
+  expect(d).not.toHaveProperty('tolls')
+  expect(d).not.toHaveProperty('customs')
+  // Y no se escondieron dentro de la base: 3 contenedores son 3 x 1600 exactos.
+  expect(d.base).toBe(4800)
+  expect(d.subtotal).toBe(4800)
+})
+
+test('si el navegador manda aduanas, se ignora y no cobra de mas', () => {
+  const { errores, limpio } = validar({
+    origin: 'CDMX', dest: 'Monterrey', containers: 1,
+    customs: 'yes', operation: 'Importación',
+  } as Record<string, unknown>)
+  expect(errores).toEqual([])
+  expect(limpio).not.toHaveProperty('customs')
+  expect(limpio).not.toHaveProperty('operation')
+  expect(calcularPrecio(limpio).total).toBe(1856)   // 1600 + 256 de IVA
 })
 
 // ── Lo que impide que alguien cotice un flete en $1 ──────────────────────
 
 test('un precio enviado por el cliente no entra al calculo', () => {
   const { limpio } = validar({
-    origin: 'CDMX', dest: 'Monterrey', containers: 2, customs: 'no',
+    origin: 'CDMX', dest: 'Monterrey', containers: 2,
     price: 1, total: 1,
   } as Record<string, unknown>)
   expect(limpio).not.toHaveProperty('price')
   expect(limpio).not.toHaveProperty('total')
-  // 2 x 1600 + 350 casetas = 3550 subtotal; IVA 568; total 4118. Ni cerca de $1.
-  expect(calcularPrecio(limpio).total).toBe(4118)
+  // 2 x 1600 = 3200 subtotal; IVA 512; total 3712. Ni cerca de $1.
+  expect(calcularPrecio(limpio).total).toBe(3712)
 })
 
 test('un recargo inventado por el cliente se descarta', () => {
   const { limpio } = validar({
-    origin: 'CDMX', dest: 'Monterrey', containers: 1, customs: 'no',
+    origin: 'CDMX', dest: 'Monterrey', containers: 1,
     special: { descuento_secreto: true, frozen: false },
   })
   expect(limpio.special).toEqual({ frozen: false, hazard: false, oog: false })
@@ -70,14 +86,9 @@ test('exige origen y destino', () => {
   expect(errores.join(' ')).toMatch(/destino/)
 })
 
-test('rechaza un valor de aduanas que no sea yes o no', () => {
-  const { errores } = validar({ origin: 'A', dest: 'B', containers: 1, customs: 'tal vez' })
-  expect(errores.join(' ')).toMatch(/customs/)
-})
-
 test('una cotizacion valida no genera errores', () => {
   const { errores } = validar({
-    origin: 'Ciudad de México', dest: 'Monterrey', containers: 2, customs: 'yes',
+    origin: 'Ciudad de México', dest: 'Monterrey', containers: 2,
   })
   expect(errores).toEqual([])
 })

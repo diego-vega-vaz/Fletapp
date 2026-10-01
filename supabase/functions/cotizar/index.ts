@@ -87,8 +87,6 @@ Deno.serve(async (req) => {
       weight: limpio.weight || null,
       cargo_desc: limpio.cargo_desc || null,
       special: limpio.special,
-      customs: limpio.customs,
-      operation: limpio.operation || null,
       incoterm: limpio.incoterm || null,
       price: desglose.total,
       precio_sugerido: desglose.total,

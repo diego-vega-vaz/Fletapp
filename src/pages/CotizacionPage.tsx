@@ -27,8 +27,6 @@ const CARGO_LABELS: Record<string, string> = {
 interface FormData {
   origin: string; dest: string; service: string; cargoType: string; containers: number
   weight: string; description: string; special: Record<string, boolean>
-  customs: string; operation: string
-  docs: { invoice: boolean; packing: boolean; bol: boolean; certs: boolean }
   terms: boolean
 }
 
@@ -137,47 +135,13 @@ function Step2({ data }: { data: FormData }) {
       <StaticRouteMap origin={data.origin} dest={data.dest} height={240} />
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 0 }}>
         <div className="section-title" style={{ marginBottom: 12 }}>Detalles de ruta</div>
-        {[['Distancia estimada', dist], ['Tiempo de tránsito', time], ['Peajes estimados', '$350 MXN'], ['Complejidad', 'Baja']].map(([l, v]) => (
+        {[['Distancia estimada', dist], ['Tiempo de tránsito', time], ['Complejidad', 'Baja']].map(([l, v]) => (
           <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 14 }}>
             <span style={{ color: 'var(--text-muted)' }}>{l}</span>
             <span style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{v}</span>
           </div>
         ))}
       </div>
-    </Card>
-  )
-}
-
-function Step3({ data, set, errors }: { data: FormData; set: SetCampo; errors: Record<string, string> }) {
-  return (
-    <Card>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 20 }}>Información aduanal</h2>
-      <Field label="¿Requiere gestión aduanal?" required>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-          <Checkbox radio checked={data.customs === 'yes'} onChange={() => set('customs', 'yes')} label="Sí (+ $2,500 MXN)" />
-          <Checkbox radio checked={data.customs === 'no'} onChange={() => set('customs', 'no')} label="No" />
-        </div>
-      </Field>
-
-      {data.customs === 'yes' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 20 }}>
-          <Field label="Tipo de Operación" required>
-            <Select value={data.operation} onChange={e => set('operation', e.target.value)}>
-              {['Importación', 'Exportación', 'Locales'].map(o => <option key={o}>{o}</option>)}
-            </Select>
-          </Field>
-          <Field label="Documentos a Cargar" error={errors.docs}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-              {[['invoice', 'Factura (Invoice)'], ['packing', 'Packing List'], ['bol', 'Bill of Lading'], ['certs', 'Certificados']].map(([k, l]) => (
-                <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Checkbox checked={!!data.docs[k as keyof typeof data.docs]} onChange={() => set('docs', { ...data.docs, [k]: !data.docs[k as keyof typeof data.docs] })} label={l} />
-                  <Button size="sm" variant="secondary" icon="upload">Cargar</Button>
-                </div>
-              ))}
-            </div>
-          </Field>
-        </div>
-      )}
     </Card>
   )
 }
@@ -211,9 +175,7 @@ function Step4({ data, price, precioError, set }: { data: FormData; price: Desgl
             ) : (
             <>
             <PriceRow label={`Tarifa base (${data.containers} cont.)`} value={price.base} />
-            <PriceRow label="Peajes" value={price.tolls} />
             {price.special > 0 && <PriceRow label="Manejo especial" value={price.special} />}
-            {price.customs > 0 && <PriceRow label="Aduanas" value={price.customs} />}
             <PriceRow label="Subtotal" value={price.subtotal} />
             <PriceRow label={`IVA (16%)`} value={price.iva} />
             <PriceRow label="TOTAL ESTIMADO" value={price.total} total />
@@ -256,15 +218,14 @@ export function CotizacionPage({ navigate, toast }: Props) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<FormData>({
     origin: 'Ciudad de México', dest: 'Monterrey', service: 'pro', cargoType: 'full', containers: 2, weight: '12000',
-    description: 'Equipos industriales para línea de ensamble', special: {}, customs: 'yes', operation: 'Importación',
-    docs: { invoice: true, packing: true, bol: false, certs: false }, terms: false,
+    description: 'Equipos industriales para línea de ensamble', special: {}, terms: false,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const set: SetCampo = (k, v) => setData(d => ({ ...d, [k]: v }))
   const [price, setPrice] = useState<DesglosePrecio | null>(null)
   const [precioError, setPrecioError] = useState('')
-  const steps = ['Detalles', 'Ruta', 'Aduanas', 'Resumen']
+  const steps = ['Detalles', 'Ruta', 'Resumen']
 
   const payload = () => ({
     origin: data.origin,
@@ -276,14 +237,12 @@ export function CotizacionPage({ navigate, toast }: Props) {
     weight: data.weight,
     cargo_desc: data.description,
     special: data.special,
-    customs: data.customs,
-    operation: data.operation,
   })
 
   // Al llegar al resumen se le pide el precio al servidor. Una sola llamada,
   // en el momento en que el precio importa.
   useEffect(() => {
-    if (step !== 3) return
+    if (step !== 2) return
     let cancelado = false
     // En microtask y no directo: limpiar aqui de forma sincrona es una
     // escritura de estado dentro del efecto (react-hooks/set-state-in-effect).
@@ -303,14 +262,11 @@ export function CotizacionPage({ navigate, toast }: Props) {
       if (!data.containers || data.containers < 1) e.containers = 'Cantidad inválida'
       if ((data.description || '').length < 10) e.description = 'Describe la mercancía (mín. 10 caracteres)'
     }
-    if (step === 2 && data.customs === 'yes') {
-      if (!data.docs.invoice || !data.docs.packing) e.docs = 'La factura y el packing list son obligatorios'
-    }
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
-  const next = () => { if (validate()) { setStep(s => Math.min(s + 1, 3)); window.scrollTo({ top: 0 }) } else toast({ type: 'error', title: 'Revisa los campos marcados' }) }
+  const next = () => { if (validate()) { setStep(s => Math.min(s + 1, 2)); window.scrollTo({ top: 0 }) } else toast({ type: 'error', title: 'Revisa los campos marcados' }) }
   const back = () => { setStep(s => Math.max(s - 1, 0)); window.scrollTo({ top: 0 }) }
   const accept = async () => {
     if (!data.terms) { toast({ type: 'warning', title: 'Acepta los términos para continuar' }); return }
@@ -331,7 +287,7 @@ export function CotizacionPage({ navigate, toast }: Props) {
     <div style={{ maxWidth: 820, margin: '0 auto' }}>
       <div className="page-head">
         <h1 className="page-title">Nueva cotización</h1>
-        <p className="page-sub">Paso {step + 1} de 4 · {['Ingresa los detalles del envío', 'Verifica tu ruta', 'Información aduanal', 'Revisa y confirma'][step]}</p>
+        <p className="page-sub">Paso {step + 1} de 3 · {['Ingresa los detalles del envío', 'Verifica tu ruta', 'Revisa y confirma'][step]}</p>
       </div>
 
       <div style={{ marginBottom: 26 }}><Steps steps={steps} current={step} /></div>
@@ -340,8 +296,7 @@ export function CotizacionPage({ navigate, toast }: Props) {
         <div className="enter-up" key={step}>
           {step === 0 && <Step1 data={data} set={set} errors={errors} />}
           {step === 1 && <Step2 data={data} />}
-          {step === 2 && <Step3 data={data} set={set} errors={errors} />}
-          {step === 3 && <Step4 data={data} price={price} precioError={precioError} set={set} />}
+          {step === 2 && <Step4 data={data} price={price} precioError={precioError} set={set} />}
         </div>
       </div>
 
@@ -349,7 +304,7 @@ export function CotizacionPage({ navigate, toast }: Props) {
         <Button variant="secondary" icon="arrowLeft" onClick={step === 0 ? () => navigate('cotizaciones') : back}>
           {step === 0 ? 'Cancelar' : 'Atrás'}
         </Button>
-        {step < 3
+        {step < 2
           ? <Button variant="primary" iconRight="arrowRight" onClick={next}>Siguiente</Button>
           : <Button variant="success" icon="checkCircle" loading={submitting} onClick={accept}>Enviar cotización</Button>}
       </div>

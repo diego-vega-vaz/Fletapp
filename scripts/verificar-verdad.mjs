@@ -53,6 +53,12 @@ const PROHIBIDO = [
     porque: 'SLA de soporte que nadie se comprometio a cumplir y no hay quien lo mida.' },
   { patron: 'lido hasta: Hoy a las',
     porque: 'Vigencia escrita a mano que no corresponde a expires_at. La cotizacion vence 24 h despues de que el operador la aprueba, no a las 5 de la tarde de hoy.' },
+  { patron: 'Peajes estimados',
+    porque: 'Las casetas salieron del cobro el 1 oct 2026. Los $350 fijos eran inventados. Las reales entran con el tarifario del corredor, dentro del costo de ruta.' },
+  { patron: 'gestion aduanal',
+    porque: 'FleetWeb no presta servicio aduanal. Quique lo quito el 1 oct 2026. Ofrecerlo en pantalla es prometer algo que nadie va a hacer.' },
+  { patron: 'gestión aduanal',
+    porque: 'FleetWeb no presta servicio aduanal. Quique lo quito el 1 oct 2026.' },
   { patron: '*1600',
     porque: 'La tarifa por contenedor volvio al navegador. El precio lo calcula la Edge Function cotizar; si la formula viaja al cliente, el cliente la puede cambiar.' },
 ]

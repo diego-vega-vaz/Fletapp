@@ -8,7 +8,7 @@ interface Props {
 }
 
 const FEATURES = [
-  { icon: 'zap', name: 'Cotiza al instante', desc: 'Tarifas de flete terrestre en minutos, con desglose claro de costos, peajes e IVA.' },
+  { icon: 'zap', name: 'Cotiza al instante', desc: 'Tarifas de flete terrestre en minutos, con desglose claro de costos e IVA.' },
   { icon: 'mapPin', name: 'Estatus paso a paso', desc: 'Cada movimiento del envio queda registrado con fecha, lugar y quien lo reporto. Rastreo por GPS en camino.' },
   { icon: 'fileText', name: 'Comprobantes por envío', desc: 'Cada envío genera su comprobante de cobro con desglose. Facturación CFDI 4.0 en integración.' },
   { icon: 'shield', name: 'Anticipo y liquidacion', desc: 'El anticipo se cobra cuando hay transportista y placas confirmadas. Cobro en linea en integracion.' },
