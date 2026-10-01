@@ -5,7 +5,7 @@ interface LogoProps {
 }
 
 // Para cambiar el logo en el futuro:
-// Sube tu archivo a public/ en GitHub con el nombre logo-mark.png.jpg
+// Sube tu archivo a public/ en GitHub con el nombre logo-mark.png
 // y Vercel lo publica automático
 
 export function Logo({ size = 24, light = false, markOnly = false }: LogoProps) {
@@ -14,7 +14,7 @@ export function Logo({ size = 24, light = false, markOnly = false }: LogoProps) 
 
   const mark = (
     <img
-      src="/logo-mark.png.jpg"
+      src="/logo-mark.png"
       width={boxSize}
       height={boxSize}
       alt="FleetWeb"
