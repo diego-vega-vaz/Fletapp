@@ -98,12 +98,19 @@ onboarding, los comentarios del código y el default de `tickets.agent_name` en
 producción, que va como migración.
 
 **Lo que NO se cambió, a propósito.** El repositorio sigue llamándose
-`Fletapp`, la carpeta local sigue siendo `Documents\Fletapp`, el dominio de
-producción sigue siendo `fletapp-nine.vercel.app` y el token de push sigue
-siendo `fleetapp-push`. Son identificadores de infraestructura, no la marca:
+`Fletapp`, la carpeta local sigue siendo `Documents\Fletapp`, el proyecto de
+Vercel se sigue llamando `fletapp` y el token de push sigue siendo
+`fleetapp-push`. Son identificadores de infraestructura, no la marca:
 renombrarlos rompe el remoto de git, el enlace con Vercel y el despliegue
 continuo, a cambio de nada que el usuario vea. Se cambian cuando se compre el
 dominio propio, en un movimiento planeado y no de pasada.
+
+**Actualización del 1 de octubre.** Quique añadió `fleetweb-mx.vercel.app` como
+dominio del mismo proyecto (`fleetweb.vercel.app` estaba ocupado). Se añadió,
+no se renombró el proyecto, así que `fletapp-nine.vercel.app` sigue
+respondiendo y nada de lo que apuntaba ahí se rompió. Es una dirección
+provisional: la definitiva será el dominio propio cuando se compre, y eso
+depende de que el abogado confirme que "FleetWeb" se puede registrar.
 
 `chats/` tampoco se tocó. Es el registro de conversaciones tal como
 ocurrieron; reescribirlo sería falsificar un histórico.

@@ -11,7 +11,9 @@ suscripción.** Los planes de pago que siguen en el código son herencia de una
 etapa anterior y se van a apagar.
 
 Stack: React 19 + Vite + TypeScript, Supabase (Auth, Postgres, Storage),
-deploy continuo en Vercel desde `main`. Producción: fletapp-nine.vercel.app
+deploy continuo en Vercel desde `main`. Producción: fleetweb-mx.vercel.app
+(el viejo `fletapp-nine.vercel.app` sigue respondiendo; los dos apuntan al
+mismo proyecto de Vercel, que internamente se sigue llamando `fletapp`)
 
 Fecha límite: 31 de diciembre de 2026.
 
