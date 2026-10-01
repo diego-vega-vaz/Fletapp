@@ -139,6 +139,54 @@ conocen el nombre. **Conviene hacer la búsqueda antes del tercero.**
 
 ---
 
+## 2026-10-01 · Fuera casetas y aduanas del cobro
+
+**Decisión.** Quique pidió quitar de la cotización el servicio aduanal y los
+peajes estimados. Las dos cosas salieron del **cobro**, no sólo de la pantalla.
+
+**Alternativas.** Quitar la línea del desglose y dejar el cargo dentro del
+total. Se descartó sin discusión: eso es cobrar algo que el cliente no puede
+ver. Es la misma familia de problema que el CFDI inventado, sólo que en
+sentido contrario.
+
+También se consideró plegar los $350 de casetas dentro de la tarifa base para
+no cambiar el total. Se descartó por lo mismo: el total habría quedado igual
+pero nadie podría explicar de dónde sale.
+
+**Por qué.** Los $350 de casetas eran una cifra inventada para la ruta
+CDMX–Monterrey; nunca correspondieron al mercado. Las casetas reales llegan
+con el tarifario del corredor, como parte del costo de ruta, en Fase 5. Y
+FleetWeb no va a prestar servicio aduanal, así que ofrecerlo en pantalla era
+prometer algo que nadie iba a hacer.
+
+**Qué cambió.** `calculo.ts` pierde `CASETAS_FIJAS` y `ADUANAS`; el desglose
+deja de tener `tolls` y `customs`; el asistente de cotización baja de cuatro
+pasos a tres y desaparece el paso de aduanas completo, con su tipo de
+operación y su carga de documentos. La landing prometía "desglose claro de
+costos, peajes e IVA" y ya no hay línea de peajes, así que la frase salió.
+
+`FORMULA_VERSION` sube a `prototipo-2026-10`. El desglose cambió de forma: las
+cotizaciones viejas tienen `tolls` y `customs` guardados y las nuevas no. Para
+eso existe el campo.
+
+**Lo que NO se tocó.** La columna `customs` de `quotes` se queda. Las
+cotizaciones anteriores tienen su valor y borrar una columna con datos no se
+deshace. Los términos y condiciones siguen mencionando los peajes como factor
+que puede variar el precio, y eso sigue siendo cierto.
+
+**La guardia de honestidad lo vigila**, con dos reglas nuevas, 20 en total:
+`Peajes estimados` y `gestión aduanal`. `Peajes` a secas no sirve como regla
+porque los términos lo mencionan legítimamente.
+
+**La Edge Function se volvió a desplegar el mismo día**, versión 6. Es la regla
+que ya costó dos días de producción desfasada en septiembre: el cálculo vive en
+el servidor, así que cambiar `calculo.ts` en el repositorio no cambia nada
+hasta desplegarlo. Si la pantalla hubiera bajado a tres pasos mientras el
+servidor seguía cobrando $350 y $2,500, nadie se habría enterado hasta ver una
+factura.
+
+---
+
 ## Cómo mantener esta bitácora
 
 Una entrada por decisión que alguien pueda cuestionar después: elección de
