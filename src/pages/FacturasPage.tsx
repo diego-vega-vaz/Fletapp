@@ -188,7 +188,7 @@ export function FacturasPage({ navigate, toast }: Props) {
           <Card>
             <div className="section-title" style={{ fontSize: 15, marginBottom: 14 }}>Otros métodos</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[['Transferencia SPEI', 'Solicita los datos bancarios a tu ejecutivo', 'building'], ['Crédito FleetWeb', 'Contacta a tu ejecutivo para activar', 'zap']].map(([l, sub, ic]) => (
+              {[['Transferencia SPEI', 'Solicita los datos bancarios a tu ejecutivo', 'building']].map(([l, sub, ic]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, border: '1px solid var(--border-soft)', borderRadius: 10 }}>
                   <Icon name={ic} size={20} style={{ color: 'var(--text-faint)' }} />
                   <div>

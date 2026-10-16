@@ -205,21 +205,16 @@ export const getInvoiceByRef = async (refId: string): Promise<DbInvoice | null> 
   return data
 }
 
-export const recordPayment = async (shipmentId: string, amount: number, method: string) => {
-  const { data: s } = await supabase.from('shipments').select('paid,price,status').eq('id', shipmentId).single()
-  if (!s) throw new Error('Shipment not found')
-  const newPaid = (s.paid || 0) + amount
-  const newStatus = newPaid >= s.price ? 'delivered' : s.status
-
-  const { error } = await supabase.from('shipments')
-    .update({ paid: newPaid, status: newStatus }).eq('id', shipmentId)
-  if (error) throw error
-
-  // Mark related pending invoice as paid
-  await supabase.from('invoices')
-    .update({ status: 'paid', method })
-    .eq('shipment_id', shipmentId).eq('status', 'pending')
-}
+// recordPayment() se elimino el 16 oct 2026.
+//
+// Hacia UPDATE sobre shipments e invoices desde el navegador. Desde que la
+// Fase 0 cerro RLS, esos UPDATE no pasan: PostgREST devuelve cero filas y NO
+// devuelve error, asi que la funcion "tenia exito" sin escribir nada y la
+// pantalla anunciaba un pago inexistente. Un fallo silencioso es peor que uno
+// ruidoso.
+//
+// El estado de dinero lo escribe el servidor cuando exista la pasarela: su
+// webhook, con service role, contra una Edge Function. No el cliente.
 
 // ── Invoices ─────────────────────────────────────────────────
 

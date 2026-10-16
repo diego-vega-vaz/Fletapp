@@ -2,28 +2,39 @@ import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
-import { Checkbox } from '../components/ui/Input'
-import { Modal } from '../components/ui/Modal'
 import { Spinner } from '../components/ui/Misc'
-import { getShipment, getInvoiceByRef, getShipmentById, recordPayment, type DbShipment } from '../lib/db'
+import { getShipment, getInvoiceByRef, getShipmentById, type DbShipment } from '../lib/db'
 import { fmtMXN } from '../data/mockData'
 import type { Route, NavParams } from '../types'
 
+/**
+ * Pantalla de pago.
+ *
+ * 16 oct 2026: esta pantalla simulaba un cobro completo y no cobraba nada.
+ * Tenia una tarjeta Visa terminacion 4242 guardada, una CLABE de Banamex, una
+ * linea de credito de $5,000, el sello "Encriptacion SSL 256-bit", y al pulsar
+ * Confirmar inventaba un folio TRX-####, abria un modal que decia "Pago
+ * confirmado" y ofrecia descargar un recibo que no existia.
+ *
+ * Nada de eso ocurria: recordPayment() hacia un UPDATE desde el navegador y
+ * RLS lo bloquea desde la Fase 0, asi que PostgREST devolvia cero filas SIN
+ * error. La funcion no fallaba, y la pantalla anunciaba un pago que nunca
+ * paso. Es la misma familia que el CFDI inventado, pero peor: aqui habia una
+ * CLABE a la que alguien podia transferir dinero de verdad.
+ *
+ * Mientras no exista la pasarela, esta pantalla dice la verdad: informa el
+ * saldo y manda a coordinar el pago con una persona. No cobra, no promete, y
+ * no escribe estado de dinero desde el navegador.
+ */
 interface Props {
   navigate: (r: Route, p?: NavParams | null) => void
   params: NavParams | null
   toast: (t: { type: string; title: string; msg?: string }) => void
 }
 
-export function PagosPage({ navigate, params, toast }: Props) {
+export function PagosPage({ navigate, params }: Props) {
   const [shipment, setShipment] = useState<DbShipment | null>(null)
   const [loading, setLoading] = useState(Boolean(params?.id))
-  const [method, setMethod] = useState<'card' | 'transfer' | 'credit'>('card')
-  const [terms, setTerms] = useState(false)
-  const [saveCard, setSaveCard] = useState(false)
-  const [processing, setProcessing] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [txRef, setTxRef] = useState('')
 
   // loading arranca segun haya id: antes el efecto hacia setLoading(false)
   // de forma sincrona (react-hooks/set-state-in-effect). Se cancela al desmontar.
@@ -50,23 +61,6 @@ export function PagosPage({ navigate, params, toast }: Props) {
   const iva = Math.round(remaining * 0.16)
   const total = remaining + iva
 
-  const confirm = async () => {
-    if (!terms) { toast({ type: 'warning', title: 'Acepta los términos para continuar' }); return }
-    if (!shipment) return
-    setProcessing(true)
-    try {
-      const methodLabel = method === 'card' ? 'Visa ••••4242' : method === 'transfer' ? 'SPEI' : 'Crédito FleetWeb'
-      await recordPayment(shipment.id, remaining, methodLabel)
-      const ref = `TRX-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 90000 + 10000)}`
-      setTxRef(ref)
-      setSuccess(true)
-    } catch {
-      toast({ type: 'error', title: 'Error al procesar pago', msg: 'Intenta de nuevo o contacta a soporte' })
-    } finally {
-      setProcessing(false)
-    }
-  }
-
   if (loading) {
     return (
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
@@ -86,8 +80,6 @@ export function PagosPage({ navigate, params, toast }: Props) {
     )
   }
 
-  const methodLabel = method === 'card' ? 'Visa ••••4242' : method === 'transfer' ? 'SPEI Banamex' : 'Crédito FleetWeb'
-
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
       <div className="page-head">
@@ -96,18 +88,11 @@ export function PagosPage({ navigate, params, toast }: Props) {
             <Icon name="arrowLeft" size={16} />Pagos
           </button>
           <Icon name="chevronRight" size={14} style={{ color: 'var(--text-faint)' }} />
-          <span style={{ fontSize: 13.5, color: 'var(--text-faint)' }}>Confirmar pago</span>
+          <span style={{ fontSize: 13.5, color: 'var(--text-faint)' }}>Saldo del envío</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--orange-50)', borderRadius: 10, border: '1px solid var(--orange-400)', marginBottom: 20 }}>
-          <Icon name="alertCircle" size={20} style={{ color: 'var(--orange-600)', flexShrink: 0 }} />
-          <div>
-            <div style={{ fontWeight: 700, color: 'var(--orange-600)', fontSize: 14 }}>Envío llegado — Esperando pago final</div>
-            <div style={{ fontSize: 13, color: 'var(--orange-600)', marginTop: 2 }}>El pago debe realizarse para liberar la carga</div>
-          </div>
-        </div>
-
-        <h1 className="page-title">Confirmar Pago</h1>
+        <h1 className="page-title">Saldo del envío</h1>
+        <p className="page-sub">Consulta lo que falta por pagar. El cobro se coordina con tu ejecutivo.</p>
       </div>
 
       <Card style={{ marginBottom: 18 }}>
@@ -127,7 +112,7 @@ export function PagosPage({ navigate, params, toast }: Props) {
       </Card>
 
       <Card style={{ marginBottom: 18 }}>
-        <div className="section-title" style={{ marginBottom: 14 }}>Desglose de pago</div>
+        <div className="section-title" style={{ marginBottom: 14 }}>Desglose</div>
         {[['Subtotal (saldo restante)', remaining], ['IVA (16%)', iva]].map(([l, v]) => (
           <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 14 }}>
             <span style={{ color: 'var(--text-muted)' }}>{l}</span>
@@ -135,88 +120,37 @@ export function PagosPage({ navigate, params, toast }: Props) {
           </div>
         ))}
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', fontSize: 17, fontWeight: 750, color: 'var(--text-strong)' }}>
-          <span>TOTAL A PAGAR AHORA</span>
+          <span>SALDO PENDIENTE</span>
           <span className="mono tnum" style={{ color: 'var(--primary)' }}>{fmtMXN(total)} MXN</span>
         </div>
       </Card>
 
       <Card style={{ marginBottom: 18 }}>
-        <div className="section-title" style={{ marginBottom: 14 }}>Método de pago</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[
-            { id: 'card' as const, label: 'Tarjeta de Crédito/Débito', icon: 'card', sub: 'Visa ••••4242' },
-            { id: 'transfer' as const, label: 'Transferencia Bancaria', icon: 'building', sub: 'CLABE: 002154007000000 · Banamex' },
-            { id: 'credit' as const, label: 'Crédito FleetWeb', icon: 'zap', sub: 'Disponible: $5,000 MXN' },
-          ].map(m => (
-            <div
-              key={m.id}
-              onClick={() => setMethod(m.id)}
-              style={{
-                padding: 14, borderRadius: 10, border: `2px solid ${method === m.id ? 'var(--primary)' : 'var(--border-soft)'}`,
-                background: method === m.id ? 'var(--blue-50)' : '#fff',
-                cursor: 'pointer', transition: 'all 0.15s',
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}
-            >
-              <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${method === m.id ? 'var(--primary)' : 'var(--gray-300)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {method === m.id && <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary)' }} />}
-              </div>
-              <Icon name={m.icon} size={20} style={{ color: method === m.id ? 'var(--primary)' : 'var(--text-faint)', flexShrink: 0 }} />
-              <div>
-                <div style={{ fontWeight: 650, fontSize: 14, color: 'var(--text-strong)' }}>{m.label}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>{m.sub}</div>
-              </div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <Icon name="info" size={20} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--text-strong)', fontSize: 14.5, marginBottom: 6 }}>
+              El pago en línea todavía no está habilitado
             </div>
-          ))}
-        </div>
-
-        {method === 'card' && (
-          <div style={{ marginTop: 16, padding: 16, background: 'var(--gray-50)', borderRadius: 10, border: '1px solid var(--border-soft)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-              <div style={{ width: 52, height: 34, borderRadius: 6, background: 'linear-gradient(135deg,#003399,#0066CC)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontStyle: 'italic', fontWeight: 800, fontSize: 12 }}>VISA</div>
-              <div>
-                <div className="mono" style={{ fontWeight: 700, fontSize: 15, letterSpacing: 2 }}>•••• •••• •••• 4242</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>Exp 12/28</div>
-              </div>
-            </div>
-            <Checkbox checked={saveCard} onChange={() => setSaveCard(!saveCard)} label="Usar esta tarjeta para pagos futuros" />
+            <p style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 10 }}>
+              Estamos integrando la pasarela de pago. Mientras tanto, el cobro se coordina
+              directamente con tu ejecutivo de cuenta, que te comparte los datos bancarios
+              y te confirma por escrito cuando el pago quede aplicado.
+            </p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
+              Esta pantalla no cobra ni guarda métodos de pago. Si alguna vez te pide datos
+              de tarjeta, no es FleetWeb.
+            </p>
           </div>
-        )}
+        </div>
       </Card>
 
-      <div style={{ marginBottom: 20 }}>
-        <Checkbox checked={terms} onChange={() => setTerms(!terms)} label="Acepto los términos de pago y confirmo que el monto es correcto" />
-      </div>
-
       <div style={{ display: 'flex', gap: 12 }}>
-        <Button variant="secondary" onClick={() => navigate('pagos')} style={{ flex: 0 }}>Cancelar</Button>
-        <Button variant="success" icon="shield" block loading={processing} onClick={confirm} style={{ flex: 1, fontSize: 15 }}>
-          {processing ? 'Procesando…' : `Confirmar pago ${fmtMXN(total)}`}
+        <Button variant="secondary" onClick={() => navigate('pagos')} style={{ flex: 0 }}>Volver</Button>
+        <Button variant="primary" icon="mail" block onClick={() => navigate('soporte')} style={{ flex: 1, fontSize: 15 }}>
+          Coordinar el pago con mi ejecutivo
         </Button>
       </div>
-      <div style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--text-faint)', marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <Icon name="shield" size={14} />Pagos seguros · Encriptación SSL 256-bit
-      </div>
-
-      <Modal open={success} title="">
-        <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--green-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <Icon name="checkCircle" size={32} style={{ color: 'var(--green-500)' }} />
-          </div>
-          <h2 style={{ fontSize: 22, fontWeight: 750, color: 'var(--text-strong)', marginBottom: 6 }}>¡Pago confirmado!</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>Tu envío ha sido marcado como entregado.</p>
-          {[['Transacción', txRef], ['Monto', fmtMXN(total)], ['Método', methodLabel], ['Envío', shipment.ref_id]].map(([l, v]) => (
-            <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border-soft)', fontSize: 14 }}>
-              <span style={{ color: 'var(--text-faint)' }}>{l}</span>
-              <span className="mono" style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{v}</span>
-            </div>
-          ))}
-          <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-            <Button variant="secondary" icon="download" block onClick={() => toast({ type: 'success', title: 'Recibo descargado' })}>Descargar recibo</Button>
-            <Button variant="primary" block onClick={() => navigate('dashboard')}>Ir al dashboard</Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   )
 }

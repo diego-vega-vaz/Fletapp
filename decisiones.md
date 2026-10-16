@@ -187,6 +187,52 @@ factura.
 
 ---
 
+## 2026-10-16 · La pantalla de pago simulaba un cobro completo
+
+**Qué se encontró.** `PagosPage` anunciaba pagos que nunca ocurrían. El botón
+Confirmar llamaba a `recordPayment()`, que hace `UPDATE` sobre `shipments` e
+`invoices` desde el navegador. RLS bloquea esos UPDATE desde la Fase 0, y
+PostgREST responde **cero filas sin error**: la función no fallaba. Acto
+seguido la pantalla inventaba un folio `TRX-####` con `Math.random()`, abría
+un modal que decía "¡Pago confirmado! Tu envío ha sido marcado como
+entregado", y ofrecía "Descargar recibo", que sólo lanzaba un aviso de
+"Recibo descargado" sin generar nada.
+
+Alrededor había cuatro cosas más que no existen: una tarjeta Visa terminación
+4242 presentada como método guardado, una **CLABE de Banamex**, una línea de
+"Crédito FleetWeb · Disponible: $5,000 MXN" y el sello "Pagos seguros ·
+Encriptación SSL 256-bit".
+
+**Por qué sobrevivió a la Fase 0.** La guardia de honestidad sí tenía regla
+para la CLABE, pero escrita con los 18 dígitos (`002154007000000001`). La de
+esta pantalla tiene 15. La regla no la cachaba. Una regla demasiado específica
+da la sensación de estar cubierto sin estarlo; ahora busca por prefijo.
+
+**Decisión.** La pantalla no se arregla contra la pasarela, porque la pasarela
+todavía no está elegida. Se convierte en lo que de verdad es: una consulta de
+saldo. Muestra el envío y el desglose, dice con todas sus letras que el pago
+en línea no está habilitado, y manda a coordinar con una persona. Incluye una
+línea defensiva: "Esta pantalla no cobra ni guarda métodos de pago. Si alguna
+vez te pide datos de tarjeta, no es FleetWeb."
+
+**Alternativa descartada.** Dejar el botón y que `recordPayment` lanzara error
+al no afectar filas. Se descartó: un botón de pagar que siempre falla es ruido
+para el usuario y una invitación a que alguien lo "arregle" reabriendo la
+escritura desde el cliente.
+
+**Qué más salió.** `recordPayment()` se eliminó de `db.ts`. El estado de dinero
+lo escribirá el webhook de la pasarela contra una Edge Function con service
+role, nunca el navegador. Y `mockData.ts` quedó sólo con `fmtMXN`: sus
+arreglos de ejemplo no los importaba ningún módulo, pero igual viajaban al
+bundle cargando la tarjeta 4242 y el crédito inexistente.
+
+**La guardia subió de 20 a 27 reglas**, con la CLABE por prefijo y seis nuevas:
+`••••4242`, `TRX-`, `Pago confirmado`, `Recibo descargado`, `Encriptaci` y
+`Crédito FleetWeb` en sus dos grafías. Si cualquiera vuelve al bundle, CI se
+cae.
+
+---
+
 ## Cómo mantener esta bitácora
 
 Una entrada por decisión que alguien pueda cuestionar después: elección de
