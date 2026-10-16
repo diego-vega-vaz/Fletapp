@@ -233,6 +233,53 @@ cae.
 
 ---
 
+## 2026-10-16 · Las dos mitades del marketplace no estaban conectadas
+
+**Qué se encontró.** Al correr por primera vez el flujo completo de punta a
+punta (`tests/ensayo-operacion.sql`), los seis primeros pasos pasaron y los
+cinco últimos fallaron. Evidencia contra producción, en transacción revertida:
+
+| Paso | Esperado | Obtenido |
+|---|---|---|
+| 7. el envío queda ligado al transportista | su id | null |
+| 8. el transportista ve su envío | 1 | 0 |
+| 9. reporta los 4 hitos | ok | "Ese envio no esta asignado a tu empresa" |
+| 10. el envío queda entregado | delivered | waiting |
+
+**La causa.** `asignar_unidad()` recibía el transportista como texto libre y
+escribía `shipments.carrier`, `.plate` y `.driver`. Nunca escribía
+`shipments.carrier_id`. Y todo el lado del transportista filtra por
+`carrier_id`: sus políticas de lectura y `reportar_avance()`, que exige
+`s.carrier_id = public.mi_carrier()`.
+
+O sea: **un envío asignado desde la consola jamás le aparece al transportista,
+y el transportista nunca puede reportar avance.** Las dos mitades se
+construyeron en tareas distintas y el enlace entre ellas nunca se hizo. Como
+no se ha operado un envío real, nadie lo había notado.
+
+**El segundo problema, más grave de negocio.** Con texto libre, nada impedía
+asignarle un envío a un transportista inexistente, o existente pero **no
+verificado**. "Transportistas verificados" es la promesa central del producto
+y no estaba sostenida en el único punto donde importa.
+
+**Por qué el ensayo sí lo encontró y las pruebas no.** Las pruebas existentes
+verifican aislamiento y rechazos: que un transportista no vea los envíos de
+otro, que un código inventado falle. Todas pasan. Ninguna recorría el camino
+feliz completo en orden. Un sistema puede tener todas sus piezas correctas y
+no funcionar, porque lo que falla es la junta entre ellas.
+
+**El arreglo** está escrito en `supabase/pendiente/asignar_unidad_v2.sql` y
+**todavía no está aplicado**, a propósito: cambia la firma de la función, así
+que aplicarlo sin actualizar al mismo tiempo `src/lib/roles.ts` y la consola
+de operación dejaría la consola llamando a una función que ya no existe. Las
+dos cosas se sueltan en el mismo despliegue.
+
+La versión nueva recibe ids de registros reales, valida que el transportista
+esté verificado y que la unidad y el operador sean de ese transportista, y
+escribe `carrier_id`. Cuando se aplique, el ensayo debe salir todo en verde.
+
+---
+
 ## Cómo mantener esta bitácora
 
 Una entrada por decisión que alguien pueda cuestionar después: elección de
