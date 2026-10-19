@@ -9,11 +9,14 @@
 -- asignacion y los cuatro hitos. Existe porque cada pieza se construyo en una
 -- tarea distinta y nunca se habian corrido juntas.
 --
--- ESTADO AL 16 OCT 2026: los dos ultimos pasos FALLAN a proposito. Es el
--- hallazgo: asignar_unidad() no escribe shipments.carrier_id, y todo el lado
--- del transportista filtra por carrier_id. El arreglo esta escrito en
--- supabase/pendiente/asignar_unidad_v2.sql y cuando se aplique esta prueba
--- debe salir toda en ok = true.
+-- HISTORIA: el 16 oct 2026 esta prueba reprobo los pasos 6 a 11. El hallazgo
+-- fue que asignar_unidad() no escribia shipments.carrier_id, y todo el lado
+-- del transportista filtra por carrier_id: un envio asignado jamas le llegaba
+-- al transportista. El 19 oct se arreglo (migraciones 20261019112032 y
+-- 20261019112640) y desde entonces los 12 pasos salen en ok.
+--
+-- Si algun paso sale en FALLA, las dos mitades del marketplace volvieron a
+-- desconectarse. No es una prueba cosmetica.
 
 begin;
 create temp table r (paso text, esperado text, obtenido text, ok boolean) on commit drop;
@@ -90,7 +93,7 @@ begin
   perform public.aprobar_cotizacion(qid, 3712, null);
   reset role;
   perform set_config('request.jwt.claims', EMB, true); set local role authenticated;
-  sid := (public.accept_quote(qid)).id;
+  sid := public.accept_quote(qid);
   reset role;
   insert into r values ('5. cotizacion aprobada y aceptada','un envio',
     coalesce(sid::text,'null'), sid is not null);
@@ -98,14 +101,11 @@ begin
   -- 6. El operador asigna la unidad
   perform set_config('request.jwt.claims', OP, true); set local role authenticated;
   begin
-    perform public.asignar_unidad(sid, cid, vid, did);          -- firma nueva
+    perform public.asignar_unidad(sid, cid, vid, did);
     e := 'ok';
-  exception when undefined_function then
-    perform public.asignar_unidad(sid, 'Fletes del Bajio SA de CV', 'Jose Ramirez', 'AB-123-CD');
-    e := 'firma vieja';
-  end;
+  exception when others then e := sqlerrm; end;
   reset role;
-  insert into r values ('6. el operador asigna la unidad','ok', e, e is not null);
+  insert into r values ('6. el operador asigna la unidad','ok', e, e = 'ok');
 
   -- 7. EL ENLACE. Sin carrier_id, el transportista no ve nada.
   select carrier_id::text into t from public.shipments where id = sid;
@@ -135,7 +135,17 @@ begin
   select count(*) into n from public.shipment_events where shipment_id = sid;
   insert into r values ('10. el envio queda entregado','delivered', coalesce(t,'null'), t = 'delivered');
   insert into r values ('11. la bitacora tiene los movimientos','5 o mas', n::text, n >= 5);
+
+  -- 12. La promesa central del producto: solo transportistas verificados
+  perform set_config('request.jwt.claims', OP, true); set local role authenticated;
+  begin
+    select id into cid from public.alta_transportista('Fletes Sin Papeles SA','FSP020202XY2');
+    perform public.asignar_unidad(sid, cid, vid, did);
+    e := 'lo acepto';
+  exception when others then e := 'rechazado'; end;
+  reset role;
+  insert into r values ('12. rechaza transportista no verificado','rechazado', e, e = 'rechazado');
 end $$;
 
-select paso, esperado, obtenido, case when ok then 'ok' else 'FALLA' end as resultado from r order by paso;
+select paso, esperado, obtenido, case when ok then 'ok' else 'FALLA' end as resultado from r order by length(paso), paso;
 rollback;

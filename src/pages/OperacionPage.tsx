@@ -22,7 +22,8 @@ import {
   type EnvioOperacion, type CotizacionOperacion, type EnvioEnRiesgo,
 } from '../lib/operacion'
 import {
-  moverEnvio, asignarUnidad, getEventos,
+  moverEnvio, asignarUnidad, transportistasAsignables, getEventos,
+  type TransportistaAsignable,
   ESTATUS_ENVIO, type EstatusEnvio, type EventoEnvio,
 } from '../lib/roles'
 
@@ -490,9 +491,12 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
   const [vista, setVista] = useState<'detalle' | 'asignar' | 'mover' | 'compromiso'>('detalle')
   const [guardando, setGuardando] = useState(false)
 
-  const [transportista, setTransportista] = useState(envio.carrier ?? '')
-  const [operador, setOperador] = useState(envio.driver ?? '')
-  const [placas, setPlacas] = useState(envio.plate ?? '')
+  const [opciones, setOpciones] = useState<TransportistaAsignable[]>([])
+  const [cargandoOpciones, setCargandoOpciones] = useState(true)
+  const [errorOpciones, setErrorOpciones] = useState('')
+  const [carrierId, setCarrierId] = useState('')
+  const [unidadId, setUnidadId] = useState('')
+  const [conductorId, setConductorId] = useState('')
 
   const [compromiso, setCompromiso] = useState(paraInput(envio.compromiso_en))
 
@@ -504,11 +508,24 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
     getEventos(envio.id).then(setEventos).catch(() => {})
   }, [envio.id])
 
+  // Los transportistas verificados se cargan una vez al abrir el detalle.
+  useEffect(() => {
+    let vivo = true
+    transportistasAsignables()
+      .then(t => { if (vivo) { setOpciones(t); setCargandoOpciones(false) } })
+      .catch(e => { if (vivo) { setErrorOpciones(e instanceof Error ? e.message : 'No se pudieron cargar'); setCargandoOpciones(false) } })
+    return () => { vivo = false }
+  }, [])
+
+  const elegido = opciones.find(o => o.id === carrierId) ?? null
+
   const guardarAsignacion = async () => {
     setGuardando(true)
     try {
-      await asignarUnidad(envio.id, transportista, operador, placas)
-      toast({ type: 'success', title: 'Unidad asignada', msg: `${transportista} · ${placas}` })
+      const u = elegido?.unidades.find(x => x.id === unidadId)
+      await asignarUnidad(envio.id, carrierId, unidadId, conductorId || null)
+      toast({ type: 'success', title: 'Unidad asignada',
+              msg: `${elegido?.razon_social ?? ''} · ${u?.placas ?? ''}` })
       onCambio()
     } catch (e) {
       toast({ type: 'error', title: 'No se pudo asignar', msg: e instanceof Error ? e.message : '' })
@@ -542,7 +559,7 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
     <>
       <Button variant="ghost" onClick={() => setVista('detalle')}>Cancelar</Button>
       <Button onClick={guardarAsignacion} loading={guardando}
-              disabled={!transportista.trim() || !placas.trim()}>Asignar</Button>
+              disabled={!carrierId || !unidadId}>Asignar</Button>
     </>
   ) : vista === 'mover' ? (
     <>
@@ -615,19 +632,61 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
       {vista === 'asignar' && (
         <>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-            El anticipo del 60% se cobra contra este dato, así que transportista y placas
-            no pueden quedar en blanco.
+            Sólo aparecen transportistas verificados, con sus unidades y conductores
+            dados de alta. El anticipo del 60% se cobra contra este dato.
           </div>
-          <Field label="Transportista" required>
-            <Input value={transportista} onChange={e => setTransportista(e.target.value)}
-                   placeholder="Razón social del transportista" />
-          </Field>
-          <Field label="Placas de la unidad" required>
-            <Input value={placas} onChange={e => setPlacas(e.target.value)} placeholder="AB-123-CD" />
-          </Field>
-          <Field label="Nombre del operador" hint="Opcional por ahora.">
-            <Input value={operador} onChange={e => setOperador(e.target.value)} placeholder="Nombre del chofer" />
-          </Field>
+
+          {cargandoOpciones ? (
+            <div style={{ fontSize: 13.5, color: 'var(--text-faint)', padding: '12px 0' }}>
+              Cargando transportistas…
+            </div>
+          ) : errorOpciones ? (
+            <div style={{ display: 'flex', gap: 8, fontSize: 13, color: 'var(--red-500)' }}>
+              <Icon name="alertCircle" size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>{errorOpciones}</span>
+            </div>
+          ) : opciones.length === 0 ? (
+            <div style={{ padding: 14, background: 'var(--orange-50)', border: '1px solid var(--orange-400)', borderRadius: 10, fontSize: 13.5, color: 'var(--orange-600)' }}>
+              No hay ningún transportista verificado todavía. Primero hay que darlo de
+              alta, completar su expediente y verificarlo, con al menos una unidad y un
+              conductor.
+            </div>
+          ) : (
+            <>
+              <Field label="Transportista" required>
+                <Select value={carrierId}
+                        onChange={e => { setCarrierId(e.target.value); setUnidadId(''); setConductorId('') }}>
+                  <option value="">Elige un transportista verificado…</option>
+                  {opciones.map(o => (
+                    <option key={o.id} value={o.id}>{o.razon_social}</option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field label="Unidad" required
+                     hint={elegido && elegido.unidades.length === 0 ? 'Este transportista no tiene unidades dadas de alta.' : undefined}>
+                <Select value={unidadId} onChange={e => setUnidadId(e.target.value)} disabled={!elegido}>
+                  <option value="">{elegido ? 'Elige una unidad…' : 'Elige primero el transportista'}</option>
+                  {(elegido?.unidades ?? []).map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.placas}{u.num_economico ? ` · ${u.num_economico}` : ''}{u.tipo ? ` · ${u.tipo}` : ''}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field label="Conductor" hint="Opcional. Es el chofer que va a manejar.">
+                <Select value={conductorId} onChange={e => setConductorId(e.target.value)} disabled={!elegido}>
+                  <option value="">{elegido ? 'Sin asignar' : 'Elige primero el transportista'}</option>
+                  {(elegido?.conductores ?? []).map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.nombre}{d.licencia_federal ? ` · ${d.licencia_federal}` : ''}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </>
+          )}
         </>
       )}
 

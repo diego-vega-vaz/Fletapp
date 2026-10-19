@@ -288,3 +288,61 @@ commit.
 
 Si la decisión se revierte, no se borra la entrada: se agrega una nueva
 explicando por qué cambió.
+
+---
+
+## 2026-10-19 · Las dos mitades del marketplace ya se tocan
+
+**Decisión.** `asignar_unidad()` deja de recibir el transportista como texto
+libre. La firma nueva es `(envio_id uuid, carrier uuid, unidad uuid, operador
+uuid)`, escribe `shipments.carrier_id` y rechaza cualquier transportista que no
+esté en `estatus = 'verificado'`. La consola de operación ya no tiene tres
+cajas de texto: tiene tres listas que sólo ofrecen transportistas verificados,
+y sus unidades y operadores reales.
+
+**El problema.** El lado del transportista entero filtra por `carrier_id`: sus
+políticas de lectura y `reportar_avance()`, que exige `s.carrier_id =
+mi_carrier()`. La función vieja nunca escribía esa columna. Un envío asignado
+desde la consola jamás le aparecía al transportista y el transportista nunca
+podía reportar avance. Las dos mitades se construyeron en tareas distintas y
+el enlace nunca se hizo; como todavía no se ha operado ningún envío real,
+nadie lo había notado.
+
+El texto libre traía un segundo hoyo: nada impedía asignarle un envío a un
+transportista inexistente, o existente pero sin verificar. "Transportistas
+verificados" es la promesa central del producto y no estaba sostenida en el
+único punto donde importa.
+
+**Cómo salió.** Lo encontró `tests/ensayo-operacion.sql`, un ensayo de punta a
+punta que recorre el camino feliz completo en una transacción con rollback. Es
+la primera vez que las piezas se corrieron juntas. Hoy la prueba tiene 12 pasos
+y los 12 salen en verde; el paso 12 comprueba que un transportista sin
+verificar es rechazado.
+
+**El ensayo también atrapó un bug de la propia corrección**: el parámetro se
+llamaba `carrier` y `shipments` tiene una columna `carrier`, así que el UPDATE
+tronaba con *column reference "carrier" is ambiguous*. Se arregló copiando los
+parámetros a variables locales con prefijo (migración `20261019112640`). Nunca
+llegó a la app.
+
+---
+
+## 2026-10-19 · En esta base, `DROP FUNCTION` se queda colgado
+
+**Hallazgo.** Tres intentos de `apply_migration` y uno de `execute_sql` con la
+migración de `asignar_unidad` se colgaron a los 180 s sin aplicar nada. Aislado
+el síntoma: `create or replace function` entra al instante, y cualquier
+sentencia que contenga `drop function` se cuelga y no borra nada. Ni siquiera
+respeta `statement_timeout`, así que el bloqueo no parece estar en Postgres
+sino en la capa que recibe la consulta. `pg_stat_activity` no mostró ningún
+bloqueador activo.
+
+**Decisión.** No pelearse con eso ahora. Las funciones viejas no se borran: se
+reemplazan con `create or replace` por un cuerpo que lanza excepción y manda a
+la firma nueva, y se les quita el permiso de ejecución a `public`, `anon` y
+`authenticated`. El efecto práctico es el mismo y no bloquea el despliegue.
+
+**Pendiente.** Quedan dos funciones muertas en la base: la firma vieja de
+`asignar_unidad(uuid, text, text, text)` y `ping_prueba_ddl()`, sobra de este
+mismo diagnóstico. Ambas están documentadas con `comment on` y sin permisos.
+Se borran cuando `DROP FUNCTION` vuelva a funcionar.

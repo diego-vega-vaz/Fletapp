@@ -70,22 +70,67 @@ export const moverEnvio = async (
   return data as EventoEnvio
 }
 
+export interface TransportistaAsignable {
+  id: string
+  razon_social: string
+  rfc: string | null
+  estatus: string | null
+  unidades: { id: string; placas: string; tipo: string | null; num_economico: string | null }[]
+  conductores: { id: string; nombre: string; licencia_federal: string | null }[]
+}
+
 /**
- * Asigna transportista y unidad. Transportista y placas son obligatorios:
- * el anticipo del 60% se cobra contra este dato (acuerdo del 15 sep 2026),
- * asi que no puede quedar en blanco.
+ * Transportistas VERIFICADOS, con sus unidades y sus conductores.
+ *
+ * Alimenta los tres selectores del modal de asignacion. Son selectores y no
+ * campos de texto a proposito: antes se escribia el nombre a mano y nada
+ * impedia asignarle un envio a un transportista sin verificar, o inexistente.
+ */
+export const transportistasAsignables = async (): Promise<TransportistaAsignable[]> => {
+  const { data: carriers, error } = await supabase
+    .from('carriers')
+    .select('id, razon_social, rfc, estatus')
+    .eq('estatus', 'verificado')
+    .order('razon_social')
+  if (error) throw new Error(error.message)
+  const ids = (carriers ?? []).map(c => c.id)
+  if (ids.length === 0) return []
+
+  const [{ data: unidades }, { data: conductores }] = await Promise.all([
+    supabase.from('vehicles').select('id, carrier_id, placas, tipo, num_economico').in('carrier_id', ids).order('placas'),
+    supabase.from('drivers').select('id, carrier_id, nombre, licencia_federal').in('carrier_id', ids).order('nombre'),
+  ])
+
+  return (carriers ?? []).map(c => ({
+    ...c,
+    unidades:    (unidades ?? []).filter(u => u.carrier_id === c.id),
+    conductores: (conductores ?? []).filter(d => d.carrier_id === c.id),
+  }))
+}
+
+/**
+ * Asigna transportista, unidad y conductor a un envio.
+ *
+ * Recibe IDS, no texto. La version anterior recibia el nombre del
+ * transportista escrito a mano y nunca escribia shipments.carrier_id, que es
+ * justo por donde el transportista encuentra sus envios: el resultado era que
+ * un envio asignado JAMAS le aparecia, y nunca podia reportar avance. Ver
+ * decisiones.md, 16 oct 2026.
+ *
+ * El servidor valida que el transportista este verificado y que la unidad y
+ * el conductor sean suyos. Esta funcion no valida nada: solo pasa los ids.
  */
 export const asignarUnidad = async (
   envioId: string,
-  transportista: string,
-  operadorNombre: string,
-  placas: string,
+  carrierId: string,
+  unidadId: string,
+  conductorId?: string | null,
 ) => {
   const { data, error } = await supabase.rpc('asignar_unidad', {
     envio_id: envioId,
-    transportista,
-    operador_nombre: operadorNombre,
-    placas,
+    carrier: carrierId,
+    unidad: unidadId,
+    operador: conductorId ?? null,
   })
   if (error) throw new Error(error.message)
   return data
