@@ -3,13 +3,14 @@
 //
 // Lo que esta pantalla NO tiene, a proposito:
 //
-//   - No muestra el precio del flete. Cuanto se le paga al transportista
-//     depende de la figura fiscal y del tarifario, y ninguna de las dos esta
-//     decidida. Enseñarle hoy el precio que paga el embarcador es enseñarle la
-//     comision antes de que exista un acuerdo sobre la comision.
-//   - No hay "carga disponible" que el transportista pueda aceptar. Eso es un
+//   - No muestra el precio que paga el embarcador. Eso seria enseñarle la
+//     comision, y no es asunto suyo. Desde el 26 oct 2026 si ve SU monto,
+//     el que se le va a pagar, dentro de la oferta.
+//   - No hay "carga disponible" que cualquiera pueda tomar. Eso es un
 //     marketplace abierto y supone que ya sabemos quien contrata a quien.
-//     Hoy el camion lo asigna una persona, que es el principio del proyecto.
+//     Aqui una persona decide a quien ofrecerle cada envio; el transportista
+//     decide si lo toma. Las dos mitades son humanas, que es el principio
+//     del proyecto.
 //
 // Lo que si hace: que el transportista vea los viajes que le asignaron y
 // reporte avance desde el telefono. Ese reporte es lo mas cercano a rastreo
@@ -26,8 +27,10 @@ import { Spinner, KVRow } from '../components/ui/Misc'
 import { supabase } from '../lib/supabase'
 import {
   reportarAvance, getEventos, canjearInvitacion,
+  misOfertas, aceptarOferta, rechazarOferta, misUnidadesYChoferes, misPagos,
   HITOS, ESTATUS_ENVIO,
   type HitoAvance, type EventoEnvio, type EstatusEnvio,
+  type OfertaTransportista, type PagoTransportista,
 } from '../lib/roles'
 import type { DbShipment } from '../lib/db'
 
@@ -51,6 +54,9 @@ export function MisViajesPage({ carrierId, onVinculado, toast }: Props) {
   const [cargando, setCargando] = useState(carrierId !== null)
   const [error, setError] = useState('')
   const [abierto, setAbierto] = useState<DbShipment | null>(null)
+  const [ofertas, setOfertas] = useState<OfertaTransportista[]>([])
+  const [pagos, setPagos] = useState<PagoTransportista[]>([])
+  const [respondiendo, setRespondiendo] = useState<OfertaTransportista | null>(null)
 
   const cargar = async () => {
     setCargando(true); setError('')
@@ -58,10 +64,15 @@ export function MisViajesPage({ carrierId, onVinculado, toast }: Props) {
       // La RLS decide que filas salen: esta consulta no filtra por carrier.
       // Si el dia de mañana alguien quita la politica, la pantalla no es la
       // que protege los datos — por eso no se finge que lo sea.
-      const { data, error: e } = await supabase
-        .from('shipments').select('*').order('created_at', { ascending: false })
+      const [{ data, error: e }, o, pg] = await Promise.all([
+        supabase.from('shipments').select('*').order('created_at', { ascending: false }),
+        misOfertas(),
+        misPagos(),
+      ])
       if (e) throw e
       setViajes((data ?? []) as DbShipment[])
+      setOfertas(o)
+      setPagos(pg)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar tus viajes')
     } finally {
@@ -74,10 +85,13 @@ export function MisViajesPage({ carrierId, onVinculado, toast }: Props) {
     let vivo = true
     ;(async () => {
       try {
-        const { data, error: e } = await supabase
-          .from('shipments').select('*').order('created_at', { ascending: false })
+        const [{ data, error: e }, o, pg] = await Promise.all([
+          supabase.from('shipments').select('*').order('created_at', { ascending: false }),
+          misOfertas(),
+          misPagos(),
+        ])
         if (e) throw e
-        if (vivo) setViajes((data ?? []) as DbShipment[])
+        if (vivo) { setViajes((data ?? []) as DbShipment[]); setOfertas(o); setPagos(pg) }
       } catch (err) {
         if (vivo) setError(err instanceof Error ? err.message : 'No se pudieron cargar tus viajes')
       } finally {
@@ -110,9 +124,78 @@ export function MisViajesPage({ carrierId, onVinculado, toast }: Props) {
         </Card>
       )}
 
+      {/* Las ofertas van primero: es lo único que le pide una decisión. */}
+      {!cargando && ofertas.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)', marginBottom: 10 }}>
+            Te están ofreciendo {ofertas.length === 1 ? 'un viaje' : `${ofertas.length} viajes`}
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {ofertas.map(o => {
+              const v = viajes.find(x => x.id === o.shipment_id)
+              return (
+                <Card key={o.id} style={{ borderColor: '#0A7D1C' }}>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text-strong)' }}>
+                        {v ? `${v.origin} → ${v.dest}` : 'Viaje ofrecido'}
+                      </div>
+                      {o.nota && (
+                        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>{o.nota}</div>
+                      )}
+                      <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 3 }}>
+                        {o.vence_en ? `Vence ${fecha(o.vence_en)}` : 'Sin fecha de vencimiento'}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: .4 }}>
+                        Te pagamos
+                      </div>
+                      <div className="mono tnum" style={{ fontSize: 21, fontWeight: 750, color: '#0A7D1C' }}>
+                        ${Number(o.monto).toLocaleString('es-MX')} MXN
+                      </div>
+                    </div>
+                    <Button onClick={() => setRespondiendo(o)}>Ver y responder</Button>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Lo que FleetWeb le debe. Registro, no transferencia. */}
+      {!cargando && pagos.length > 0 && (
+        <Card style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text-strong)', marginBottom: 8 }}>
+            Tus pagos
+          </div>
+          {pagos.map(pg => (
+            <div key={pg.id} style={{
+              display: 'flex', justifyContent: 'space-between', gap: 12,
+              fontSize: 13, padding: '5px 0', borderBottom: '1px solid var(--border-soft)',
+            }}>
+              <span style={{ color: 'var(--text-muted)' }}>
+                {pg.tipo === 'anticipo' ? 'Anticipo' : 'Liquidación'}
+                {pg.referencia ? ` · ref. ${pg.referencia}` : ''}
+              </span>
+              <span className="mono tnum" style={{
+                fontWeight: 650,
+                color: pg.estatus === 'pagado' ? '#0A7D1C' : 'var(--text-strong)',
+              }}>
+                ${Number(pg.monto).toLocaleString('es-MX')} · {pg.estatus === 'pagado' ? 'pagado' : 'por pagar'}
+              </span>
+            </div>
+          ))}
+          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>
+            Esta lista es el registro de lo acordado. Las transferencias se hacen por fuera.
+          </div>
+        </Card>
+      )}
+
       {cargando ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}><Spinner size={28} /></div>
-      ) : viajes.length === 0 ? (
+      ) : viajes.length === 0 && ofertas.length === 0 ? (
         <Card><div style={{ textAlign: 'center', padding: 32, color: 'var(--text-faint)', fontSize: 14 }}>
           Todavía no tienes viajes asignados.
         </div></Card>
@@ -121,6 +204,16 @@ export function MisViajesPage({ carrierId, onVinculado, toast }: Props) {
           <Lista titulo="En curso" viajes={activos} onAbrir={setAbierto} />
           <Lista titulo="Cerrados" viajes={cerrados} onAbrir={setAbierto} />
         </>
+      )}
+
+      {respondiendo && (
+        <ResponderOferta
+          oferta={respondiendo}
+          viaje={viajes.find(x => x.id === respondiendo.shipment_id) ?? null}
+          onClose={() => setRespondiendo(null)}
+          onCambio={() => { setRespondiendo(null); cargar() }}
+          toast={toast}
+        />
       )}
 
       {abierto && (
@@ -312,6 +405,153 @@ function DetalleViaje({ viaje, onClose, onCambio, toast }: {
           </div>
         )}
       </div>
+    </Modal>
+  )
+}
+
+// ── Responder una oferta ──────────────────────────────────────
+
+interface ResponderProps {
+  oferta: OfertaTransportista
+  viaje: DbShipment | null
+  onClose: () => void
+  onCambio: () => void
+  toast: (t: { type: string; title: string; msg?: string }) => void
+}
+
+/**
+ * Aquí el transportista decide. Elige su unidad y su chofer porque es lo
+ * único del proceso que sólo él sabe: cuál tiene libre mañana.
+ *
+ * El monto que ve es el suyo, no el del embarcador. Esa distinción es la
+ * razón de que esta pantalla exista.
+ */
+function ResponderOferta({ oferta, viaje, onClose, onCambio, toast }: ResponderProps) {
+  const [unidades, setUnidades] = useState<{ id: string; placas: string; tipo: string | null }[]>([])
+  const [choferes, setChoferes] = useState<{ id: string; nombre: string }[]>([])
+  const [unidad, setUnidad] = useState('')
+  const [chofer, setChofer] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [vista, setVista] = useState<'aceptar' | 'rechazar'>('aceptar')
+  const [guardando, setGuardando] = useState(false)
+  const [cargando, setCargando] = useState(true)
+
+  useEffect(() => {
+    let vivo = true
+    ;(async () => {
+      try {
+        const r = await misUnidadesYChoferes()
+        if (vivo) { setUnidades(r.unidades); setChoferes(r.choferes) }
+      } finally { if (vivo) setCargando(false) }
+    })()
+    return () => { vivo = false }
+  }, [])
+
+  const aceptar = async () => {
+    setGuardando(true)
+    try {
+      await aceptarOferta(oferta.id, unidad, chofer || null)
+      toast({ type: 'success', title: 'Viaje aceptado',
+              msg: 'Ya aparece en tus viajes en curso' })
+      onCambio()
+    } catch (e) {
+      toast({ type: 'error', title: 'No se pudo aceptar', msg: e instanceof Error ? e.message : '' })
+    } finally { setGuardando(false) }
+  }
+
+  const rechazar = async () => {
+    setGuardando(true)
+    try {
+      await rechazarOferta(oferta.id, motivo)
+      toast({ type: 'success', title: 'Viaje rechazado' })
+      onCambio()
+    } catch (e) {
+      toast({ type: 'error', title: 'No se pudo rechazar', msg: e instanceof Error ? e.message : '' })
+    } finally { setGuardando(false) }
+  }
+
+  const pie = vista === 'aceptar' ? (
+    <>
+      <Button variant="ghost" onClick={() => setVista('rechazar')}>No puedo</Button>
+      <Button onClick={aceptar} loading={guardando} disabled={!unidad || cargando}>
+        Aceptar el viaje
+      </Button>
+    </>
+  ) : (
+    <>
+      <Button variant="ghost" onClick={() => setVista('aceptar')}>Volver</Button>
+      <Button variant="danger" onClick={rechazar} loading={guardando}>Rechazar</Button>
+    </>
+  )
+
+  return (
+    <Modal open onClose={onClose} width={560} footer={pie}
+           title={viaje ? `${viaje.origin} → ${viaje.dest}` : 'Viaje ofrecido'}>
+      <div style={{
+        padding: '12px 14px', borderRadius: 10, background: '#E8F8EA',
+        marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ fontSize: 13.5, color: '#0A7D1C' }}>Se te paga por este viaje</span>
+        <span className="mono tnum" style={{ fontSize: 22, fontWeight: 750, color: '#0A7D1C' }}>
+          ${Number(oferta.monto).toLocaleString('es-MX')} MXN
+        </span>
+      </div>
+
+      {viaje && <>
+        <KVRow label="Carga" value={viaje.cargo || '—'} />
+        <KVRow label="Contenedores" value={viaje.containers || '—'} />
+        <KVRow label="Peso" value={viaje.weight || '—'} />
+      </>}
+      {oferta.nota && <KVRow label="Nota de FleetWeb" value={oferta.nota} />}
+      {oferta.vence_en && <KVRow label="Puedes responder hasta" value={fecha(oferta.vence_en)} />}
+
+      {vista === 'aceptar' ? (
+        <div style={{ marginTop: 18 }}>
+          {cargando ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}><Spinner size={22} /></div>
+          ) : unidades.length === 0 ? (
+            <div style={{ fontSize: 13.5, color: 'var(--st-disputed)' }}>
+              No tienes unidades dadas de alta. Avísale a FleetWeb para registrarlas
+              antes de poder aceptar viajes.
+            </div>
+          ) : (
+            <>
+              <Field label="¿Qué unidad mandas?" required>
+                <select value={unidad} onChange={e => setUnidad(e.target.value)}
+                        style={{ width: '100%', padding: '9px 11px', borderRadius: 6,
+                                 border: '1px solid var(--border)', fontSize: 14 }}>
+                  <option value="">Elige una unidad…</option>
+                  {unidades.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.placas}{u.tipo ? ` · ${u.tipo}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="¿Qué chofer va?" hint="Puedes dejarlo en blanco y decirlo después.">
+                <select value={chofer} onChange={e => setChofer(e.target.value)}
+                        style={{ width: '100%', padding: '9px 11px', borderRadius: 6,
+                                 border: '1px solid var(--border)', fontSize: 14 }}>
+                  <option value="">Lo defino después</option>
+                  {choferes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </Field>
+              <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 8 }}>
+                Al aceptar, el viaje pasa a tus viajes en curso y ya puedes reportar
+                avance desde aquí.
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div style={{ marginTop: 18 }}>
+          <Field label="¿Por qué no puedes?"
+                 hint="Nos ayuda a no ofrecerte viajes que no te sirven.">
+            <Textarea rows={3} value={motivo} onChange={e => setMotivo(e.target.value)}
+                      placeholder="No tengo unidad libre esa fecha" />
+          </Field>
+        </div>
+      )}
     </Modal>
   )
 }

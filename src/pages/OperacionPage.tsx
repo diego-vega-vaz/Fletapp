@@ -18,11 +18,13 @@ import { fmtMXN } from '../data/mockData'
 import {
   getEnviosOperacion, getCotizacionesOperacion, getEnviosEnRiesgo,
   aprobarCotizacion, rechazarCotizacion, fijarCompromiso, facturarLiquidacion,
+  ofertasVivas,
   MOTIVO_ALERTA,
   type EnvioOperacion, type CotizacionOperacion, type EnvioEnRiesgo,
+  type OfertaViva,
 } from '../lib/operacion'
 import {
-  moverEnvio, asignarUnidad, transportistasAsignables, getEventos,
+  moverEnvio, asignarUnidad, transportistasAsignables, getEventos, ofrecerEnvio,
   type TransportistaAsignable,
   ESTATUS_ENVIO, type EstatusEnvio, type EventoEnvio,
 } from '../lib/roles'
@@ -67,14 +69,15 @@ export function OperacionPage({ toast }: Props) {
   const [abierto, setAbierto] = useState<EnvioOperacion | null>(null)
   const [revisando, setRevisando] = useState<CotizacionOperacion | null>(null)
   const [liquidando, setLiquidando] = useState<string | null>(null)
+  const [vivas, setVivas] = useState<OfertaViva[]>([])
 
   const cargar = async () => {
     setCargando(true); setError('')
     try {
-      const [e, c, a] = await Promise.all([
-        getEnviosOperacion(), getCotizacionesOperacion(), getEnviosEnRiesgo(),
+      const [e, c, a, ov] = await Promise.all([
+        getEnviosOperacion(), getCotizacionesOperacion(), getEnviosEnRiesgo(), ofertasVivas(),
       ])
-      setEnvios(e); setCotizaciones(c); setRiesgo(a)
+      setEnvios(e); setCotizaciones(c); setRiesgo(a); setVivas(ov)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la operación')
     } finally {
@@ -89,10 +92,10 @@ export function OperacionPage({ toast }: Props) {
     let vivo = true
     ;(async () => {
       try {
-        const [e, c, a] = await Promise.all([
-          getEnviosOperacion(), getCotizacionesOperacion(), getEnviosEnRiesgo(),
+        const [e, c, a, ov] = await Promise.all([
+          getEnviosOperacion(), getCotizacionesOperacion(), getEnviosEnRiesgo(), ofertasVivas(),
         ])
-        if (vivo) { setEnvios(e); setCotizaciones(c); setRiesgo(a) }
+        if (vivo) { setEnvios(e); setCotizaciones(c); setRiesgo(a); setVivas(ov) }
       } catch (err) {
         if (vivo) setError(err instanceof Error ? err.message : 'No se pudo cargar la operación')
       } finally {
@@ -101,6 +104,8 @@ export function OperacionPage({ toast }: Props) {
     })()
     return () => { vivo = false }
   }, [])
+
+  const ofertaDe = (envioId: string) => vivas.find(o => o.shipment_id === envioId) ?? null
 
   const liquidar = async (e: EnvioOperacion) => {
     setLiquidando(e.id)
@@ -307,7 +312,18 @@ export function OperacionPage({ toast }: Props) {
                           </div>
                         </>
                       ) : (
-                        <Badge color="var(--orange-500)" bg="var(--orange-50)" dot>Sin camión asignado</Badge>
+                        <>
+                          <Badge color="var(--orange-500)" bg="var(--orange-50)" dot>Sin camión asignado</Badge>
+                          {ofertaDe(e.id) ? (
+                            <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4 }}>
+                              Ofrecido · esperando respuesta
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4 }}>
+                              Ábrelo para ofrecerlo a un transportista
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -609,7 +625,7 @@ interface DetalleProps {
 
 function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
   const [eventos, setEventos] = useState<EventoEnvio[]>([])
-  const [vista, setVista] = useState<'detalle' | 'asignar' | 'mover' | 'compromiso'>('detalle')
+  const [vista, setVista] = useState<'detalle' | 'asignar' | 'mover' | 'compromiso' | 'ofrecer'>('detalle')
   const [guardando, setGuardando] = useState(false)
 
   const [opciones, setOpciones] = useState<TransportistaAsignable[]>([])
@@ -620,6 +636,13 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
   const [conductorId, setConductorId] = useState('')
 
   const [compromiso, setCompromiso] = useState(paraInput(envio.compromiso_en))
+
+  // Oferta: a quién y por cuánto. El monto arranca con el costo que ya se
+  // capturó al aprobar la cotización, si lo hubo.
+  const [ofCarrier, setOfCarrier] = useState('')
+  const [ofMonto, setOfMonto] = useState(
+    envio.costo_transportista != null ? String(envio.costo_transportista) : '')
+  const [ofNota, setOfNota] = useState('')
 
   const [status, setStatus] = useState<EstatusEnvio>((envio.status as EstatusEnvio) ?? 'waiting')
   const [ubicacion, setUbicacion] = useState('')
@@ -650,6 +673,25 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
       onCambio()
     } catch (e) {
       toast({ type: 'error', title: 'No se pudo asignar', msg: e instanceof Error ? e.message : '' })
+    } finally { setGuardando(false) }
+  }
+
+  const montoNum = Number(ofMonto)
+  const montoValido = Number.isFinite(montoNum) && montoNum > 0
+  const comisionOferta = montoValido && envio.price != null
+    ? Number(envio.price) - montoNum : null
+  const ofertaMala = comisionOferta !== null && comisionOferta <= 0
+
+  const guardarOferta = async () => {
+    setGuardando(true)
+    try {
+      await ofrecerEnvio(envio.id, ofCarrier, montoNum, ofNota)
+      const quien = opciones.find(o => o.id === ofCarrier)?.razon_social ?? ''
+      toast({ type: 'success', title: 'Viaje ofrecido',
+              msg: `${quien} · ${fmtMXN(montoNum)} MXN. Falta que lo acepte.` })
+      onCambio()
+    } catch (e) {
+      toast({ type: 'error', title: 'No se pudo ofrecer', msg: e instanceof Error ? e.message : '' })
     } finally { setGuardando(false) }
   }
 
@@ -692,13 +734,24 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
       <Button variant="ghost" onClick={() => setVista('detalle')}>Cancelar</Button>
       <Button onClick={guardarCompromiso} loading={guardando}>Guardar fecha</Button>
     </>
+  ) : vista === 'ofrecer' ? (
+    <>
+      <Button variant="ghost" onClick={() => setVista('detalle')}>Cancelar</Button>
+      <Button onClick={guardarOferta} loading={guardando}
+              disabled={!ofCarrier || !montoValido || ofertaMala}>Ofrecer el viaje</Button>
+    </>
   ) : (
     <>
       <Button variant="secondary" icon="clock" onClick={() => setVista('compromiso')}>
         Fecha compromiso
       </Button>
+      {!envio.carrier && (
+        <Button variant="secondary" icon="send" onClick={() => setVista('ofrecer')}>
+          Ofrecer a transportista
+        </Button>
+      )}
       <Button variant="secondary" icon="truck" onClick={() => setVista('asignar')}>
-        {envio.carrier ? 'Cambiar unidad' : 'Asignar unidad'}
+        {envio.carrier ? 'Cambiar unidad' : 'Asignar directo'}
       </Button>
       <Button icon="navigation" onClick={() => setVista('mover')}>Mover estatus</Button>
     </>
@@ -750,9 +803,74 @@ function DetalleOperacion({ envio, onClose, onCambio, toast }: DetalleProps) {
         </>
       )}
 
+      {vista === 'ofrecer' && (
+        <>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
+            El transportista va a ver la ruta y <strong>este monto</strong>, no el precio
+            que paga el embarcador. Si acepta, él elige qué unidad y qué chofer manda, y
+            el viaje queda asignado solo.
+          </div>
+
+          {cargandoOpciones ? (
+            <div style={{ fontSize: 13.5, color: 'var(--text-faint)', padding: '12px 0' }}>
+              Cargando transportistas…
+            </div>
+          ) : opciones.length === 0 ? (
+            <div style={{ padding: 14, background: 'var(--orange-50)', border: '1px solid var(--orange-400)', borderRadius: 10, fontSize: 13.5, color: 'var(--orange-600)' }}>
+              No hay ningún transportista verificado todavía.
+            </div>
+          ) : (
+            <>
+              <Field label="¿A quién se lo ofreces?" required>
+                <Select value={ofCarrier} onChange={e => setOfCarrier(e.target.value)}>
+                  <option value="">Elige un transportista…</option>
+                  {opciones.map(o => (
+                    <option key={o.id} value={o.id}>{o.razon_social}</option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field label="¿Cuánto se le paga?" required
+                     hint="En pesos. Es lo que él va a ver.">
+                <Input value={ofMonto} onChange={e => setOfMonto(e.target.value)} inputMode="numeric" />
+              </Field>
+
+              {comisionOferta !== null && (
+                <div style={{
+                  marginTop: -4, marginBottom: 14, padding: '10px 12px', borderRadius: 8,
+                  background: ofertaMala ? '#FDECEE' : '#E8F8EA',
+                  color: ofertaMala ? 'var(--st-disputed)' : '#0A7D1C',
+                  fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 12,
+                }}>
+                  <span>{ofertaMala ? 'Con ese monto el flete pierde dinero' : 'Nos quedaría de comisión'}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                    {fmtMXN(comisionOferta)} MXN
+                  </span>
+                </div>
+              )}
+
+              <Field label="Nota para el transportista"
+                     hint="Lo que necesite saber para decidir: horario de carga, tipo de maniobra.">
+                <Textarea rows={2} value={ofNota} onChange={e => setOfNota(e.target.value)}
+                          placeholder="Carga mañana 7am en el patio de Vallejo" />
+              </Field>
+
+              <div style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>
+                Tiene 24 horas para responder. Mientras tanto no se le puede ofrecer a
+                nadie más.
+              </div>
+            </>
+          )}
+        </>
+      )}
+
       {vista === 'asignar' && (
         <>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
+            Asignación directa, sin preguntarle al transportista. Úsala sólo cuando ya
+            lo arreglaste por teléfono: para el camino normal está "Ofrecer a
+            transportista", que le deja aceptar o rechazar.
+            <br /><br />
             Sólo aparecen transportistas verificados, con sus unidades y conductores
             dados de alta. El anticipo del 60% se cobra contra este dato.
           </div>

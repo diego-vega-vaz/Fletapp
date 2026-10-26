@@ -423,3 +423,60 @@ es justo el tipo de mentira que este proyecto no se permite.
 
 **Prueba.** `tests/ensayo-liquidacion.sql`, seis pasos, los seis en verde
 contra producción en transacción revertida.
+
+---
+
+## 2026-10-26 · El transportista ya puede decir que no
+
+**Decisión.** Entre el envío y la asignación hay ahora una **oferta**. El
+operador se lo ofrece a un transportista verificado con **su** monto; el
+transportista lo ve en su teléfono con la ruta y el dinero, y acepta o
+rechaza. Si acepta, **él elige qué unidad y qué chofer manda** — es lo único
+del proceso que sólo él sabe.
+
+**Lo que cambia en su pantalla.** Hasta hoy el panel del transportista no
+mostraba ningún precio, a propósito, porque el único precio que existía era el
+del embarcador y enseñárselo es enseñarle la comisión. Ahora ve **su** monto,
+que es otra cosa. El del embarcador sigue sin aparecer, y hay dos pasos de la
+prueba que vigilan lo simétrico: el embarcador no puede ver ni la oferta ni lo
+que se le paga al transportista.
+
+**La asignación directa no se quitó.** Sigue ahí para cuando ya se arregló por
+teléfono, pero el botón ahora dice "Asignar directo" y el camino normal es
+ofrecer. Las dos mitades son humanas: una persona decide a quién ofrecerle,
+otra persona decide si lo toma.
+
+**Reglas duras.** Sólo transportistas verificados, misma regla que en la
+asignación. No se puede ofrecer un envío que ya tiene camión. No puede haber
+dos ofertas vivas del mismo envío, ni dos aceptadas — lo impiden índices
+únicos, no el botón. Y el monto ofrecido **manda sobre el costo estimado**: si
+el operador había puesto otra cifra al aprobar, se actualiza, porque el dinero
+que vale es el que se ofreció de verdad.
+
+## 2026-10-26 · Lo que se le debe al transportista
+
+**Decisión.** Al aceptar la oferta se registra lo que FleetWeb le debe,
+partido en anticipo y liquidación, espejo de lo que paga el embarcador.
+
+**El 60/40 es un parámetro, no una constante.** Que los transportistas acepten
+cobrar 60/40 es una pregunta **abierta** del 27 de septiembre y no se le ha
+preguntado a ninguno, porque todavía no se recluta a ninguno. El porcentaje
+viaja como argumento con 60 por omisión: el día que uno exija 50/50 o pago
+contra entrega, se cambia el número y ya. Marcarlo como "hecho" sin esta nota
+sería vender una decisión que no se ha tomado.
+
+**Esto no mueve dinero.** La tabla registra lo que se debe; no hay pasarela.
+Marcar un pago como hecho es dejar constancia de una transferencia que una
+persona hizo en el banco, y por eso el servidor **exige la referencia**: un
+pago sin comprobante no es un pago.
+
+**La aritmética, otra vez.** La liquidación es monto menos anticipo, no un 40%
+recalculado, para que las dos partes sumen exactamente el monto.
+
+**El ensayo volvió a cazar un bug mío**, el tercero del mismo tipo: un
+parámetro llamado igual que una columna (`referencia`). Ya es un patrón
+conocido en este proyecto y conviene nombrarlo: **todo parámetro de función se
+copia a una variable local con prefijo `v_` antes de usarse en un UPDATE.**
+
+**Prueba.** `tests/ensayo-oferta.sql`, quince pasos, los quince en verde
+contra producción en transacción revertida.

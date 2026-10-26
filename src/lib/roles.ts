@@ -194,3 +194,115 @@ export const reportarAvance = async (
   if (error) throw new Error(error.message)
   return data as EventoEnvio
 }
+
+// ── Ofertas al transportista ──────────────────────────────────
+//
+// La otra mitad de la conversación. Antes el operador asignaba y ya; el
+// transportista se enteraba de que traía carga y nunca veía cuánto se le
+// pagaba. Ahora hay una oferta de por medio con SU monto — nunca el precio
+// del embarcador, que no es asunto suyo.
+
+export interface OfertaTransportista {
+  id: string
+  shipment_id: string
+  carrier_id: string
+  monto: number
+  estatus: 'ofrecida' | 'aceptada' | 'rechazada' | 'cancelada'
+  nota: string | null
+  motivo_rechazo: string | null
+  ofrecida_en: string
+  vence_en: string | null
+}
+
+export interface PagoTransportista {
+  id: string
+  shipment_id: string
+  carrier_id: string
+  tipo: 'anticipo' | 'liquidacion'
+  monto: number
+  estatus: 'por_pagar' | 'pagado' | 'cancelado'
+  referencia: string | null
+  pagado_en: string | null
+}
+
+/** El operador ofrece un envío a un transportista verificado, con su monto. */
+export const ofrecerEnvio = async (
+  envioId: string, carrierId: string, monto: number, nota?: string, horas = 24,
+) => {
+  const { data, error } = await supabase.rpc('ofrecer_envio', {
+    envio_id: envioId, carrier: carrierId, monto, nota: nota?.trim() || null, horas,
+  })
+  if (error) throw new Error(error.message)
+  return data as OfertaTransportista
+}
+
+export const cancelarOferta = async (ofertaId: string) => {
+  const { error } = await supabase.rpc('cancelar_oferta', { oferta_id: ofertaId })
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * El transportista acepta y elige SU unidad y SU chofer: es lo único del
+ * proceso que sólo él sabe. Ahí mismo queda asignado el envío y se registra
+ * lo que se le debe, partido en anticipo y liquidación.
+ */
+export const aceptarOferta = async (
+  ofertaId: string, unidadId: string, choferId?: string | null,
+) => {
+  const { data, error } = await supabase.rpc('aceptar_oferta', {
+    oferta_id: ofertaId, unidad: unidadId, chofer: choferId ?? null,
+  })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export const rechazarOferta = async (ofertaId: string, motivo?: string) => {
+  const { error } = await supabase.rpc('rechazar_oferta', {
+    oferta_id: ofertaId, motivo: motivo?.trim() || null,
+  })
+  if (error) throw new Error(error.message)
+}
+
+/** Las ofertas que esperan respuesta de este transportista. La RLS filtra. */
+export const misOfertas = async (): Promise<OfertaTransportista[]> => {
+  const { data, error } = await supabase
+    .from('carrier_offers')
+    .select('*')
+    .eq('estatus', 'ofrecida')
+    .order('ofrecida_en', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as OfertaTransportista[]
+}
+
+/** Lo que FleetWeb le debe a este transportista. La RLS filtra. */
+export const misPagos = async (): Promise<PagoTransportista[]> => {
+  const { data, error } = await supabase
+    .from('carrier_payables')
+    .select('*')
+    .order('creado_en', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as PagoTransportista[]
+}
+
+/**
+ * Deja constancia de una transferencia que un humano hizo en el banco. No
+ * mueve dinero: no hay pasarela. Por eso el servidor exige la referencia.
+ */
+export const marcarPagoTransportista = async (pagoId: string, referencia: string) => {
+  const { error } = await supabase.rpc('marcar_pago_transportista', {
+    pago_id: pagoId, referencia,
+  })
+  if (error) throw new Error(error.message)
+}
+
+/** Mis unidades y mis choferes, para elegir al aceptar una oferta. */
+export const misUnidadesYChoferes = async () => {
+  const [{ data: unidades }, { data: choferes }] = await Promise.all([
+    supabase.from('vehicles').select('id, placas, tipo, num_economico').order('placas'),
+    supabase.from('drivers').select('id, nombre, licencia_federal').order('nombre'),
+  ])
+  return {
+    unidades: (unidades ?? []) as { id: string; placas: string; tipo: string | null; num_economico: string | null }[],
+    choferes: (choferes ?? []) as { id: string; nombre: string; licencia_federal: string | null }[],
+  }
+}

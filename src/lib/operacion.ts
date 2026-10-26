@@ -172,3 +172,23 @@ export const fijarCompromiso = async (envioId: string, cuando: string | null) =>
   if (error) throw new Error(error.message)
   return data
 }
+
+/** Una oferta esperando respuesta, vista desde la consola del operador. */
+export interface OfertaViva {
+  id: string
+  shipment_id: string
+  carrier_id: string
+  monto: number
+  ofrecida_en: string
+  vence_en: string | null
+}
+
+/** Las ofertas que todavía esperan respuesta. La RLS deja verlas al operador. */
+export const ofertasVivas = async (): Promise<OfertaViva[]> => {
+  const { data, error } = await supabase
+    .from('carrier_offers')
+    .select('id, shipment_id, carrier_id, monto, ofrecida_en, vence_en')
+    .eq('estatus', 'ofrecida')
+  if (error) throw new Error(error.message)
+  return (data ?? []) as OfertaViva[]
+}
