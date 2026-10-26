@@ -17,7 +17,7 @@ import { Tabs } from '../components/ui/Tabs'
 import { fmtMXN } from '../data/mockData'
 import {
   getEnviosOperacion, getCotizacionesOperacion, getEnviosEnRiesgo,
-  aprobarCotizacion, rechazarCotizacion, fijarCompromiso,
+  aprobarCotizacion, rechazarCotizacion, fijarCompromiso, facturarLiquidacion,
   MOTIVO_ALERTA,
   type EnvioOperacion, type CotizacionOperacion, type EnvioEnRiesgo,
 } from '../lib/operacion'
@@ -66,6 +66,7 @@ export function OperacionPage({ toast }: Props) {
   const [filtro, setFiltro] = useState('todos')
   const [abierto, setAbierto] = useState<EnvioOperacion | null>(null)
   const [revisando, setRevisando] = useState<CotizacionOperacion | null>(null)
+  const [liquidando, setLiquidando] = useState<string | null>(null)
 
   const cargar = async () => {
     setCargando(true); setError('')
@@ -101,10 +102,33 @@ export function OperacionPage({ toast }: Props) {
     return () => { vivo = false }
   }, [])
 
+  const liquidar = async (e: EnvioOperacion) => {
+    setLiquidando(e.id)
+    try {
+      await facturarLiquidacion(e.id)
+      toast({ type: 'success', title: 'Liquidación facturada', msg: e.ref_id ?? '' })
+      await cargar()
+    } catch (err) {
+      toast({ type: 'error', title: 'No se pudo facturar',
+              msg: err instanceof Error ? err.message : '' })
+    } finally { setLiquidando(null) }
+  }
+
   const filtrados = useMemo(
     () => filtro === 'todos' ? envios : envios.filter(e => e.status === filtro),
     [envios, filtro],
   )
+
+  // Totales del negocio. Se suman aqui porque ya tenemos las filas; si algun
+  // dia la lista se pagina, esto se mueve a una consulta del servidor.
+  const dinero = useMemo(() => {
+    const conComision = envios.filter(e => e.comision != null)
+    return {
+      facturado: envios.reduce((t, e) => t + Number(e.price ?? 0), 0),
+      comision:  conComision.reduce((t, e) => t + Number(e.comision ?? 0), 0),
+      sinDato:   envios.length - conComision.length,
+    }
+  }, [envios])
 
   const porAsignar = envios.filter(e => e.status === 'waiting' && !e.carrier).length
   const enRuta = envios.filter(e => e.status === 'transit' || e.status === 'delayed').length
@@ -198,6 +222,42 @@ export function OperacionPage({ toast }: Props) {
 
       {!cargando && tab === 'envios' && (
         <>
+          {/*
+            El dinero del negocio, arriba y sin maquillaje. "Facturado" es lo
+            que se le cobró al embarcador, no lo que entró al banco: todavía
+            no hay pasarela conectada, así que nadie debe leer esto como
+            dinero cobrado.
+          */}
+          <Card style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: .4 }}>
+                  Facturado a embarcadores
+                </div>
+                <div className="mono tnum" style={{ fontSize: 22, fontWeight: 750, color: 'var(--text-strong)' }}>
+                  {fmtMXN(dinero.facturado)} MXN
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: .4 }}>
+                  Comisión de FleetWeb
+                </div>
+                <div className="mono tnum" style={{ fontSize: 22, fontWeight: 750, color: '#0A7D1C' }}>
+                  {fmtMXN(dinero.comision)} MXN
+                </div>
+                {dinero.sinDato > 0 && (
+                  <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginTop: 2 }}>
+                    {dinero.sinDato} {dinero.sinDato === 1 ? 'envío sin' : 'envíos sin'} costo de transportista capturado
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 220, fontSize: 12.5, color: 'var(--text-faint)', lineHeight: 1.5 }}>
+                Facturado es lo que se le cobró al embarcador, no lo que entró al banco.
+                No hay pasarela conectada todavía.
+              </div>
+            </div>
+          </Card>
+
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '16px 0' }}>
             {FILTROS.map(f => (
               <button
@@ -257,6 +317,31 @@ export function OperacionPage({ toast }: Props) {
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
                         cobrado {fmtMXN(e.paid)}
+                      </div>
+                      {e.comision != null ? (
+                        <div className="mono tnum" style={{ fontSize: 12, color: '#0A7D1C', marginTop: 2 }}>
+                          comisión {fmtMXN(e.comision)}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>
+                          sin comisión registrada
+                        </div>
+                      )}
+                      <div style={{ marginTop: 6 }}>
+                        {e.liquidado ? (
+                          <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>liquidación facturada</span>
+                        ) : (
+                          <button
+                            onClick={ev => { ev.stopPropagation(); liquidar(e) }}
+                            disabled={liquidando === e.id}
+                            style={{
+                              fontSize: 11.5, padding: '3px 9px', borderRadius: 999, cursor: 'pointer',
+                              border: '1px solid var(--border)', background: '#fff', color: 'var(--text-muted)',
+                            }}
+                          >
+                            {liquidando === e.id ? 'Facturando…' : 'Facturar liquidación'}
+                          </button>
+                        )}
                       </div>
                     </div>
                     <Icon name="chevronRight" size={18} />

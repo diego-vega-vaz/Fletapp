@@ -389,3 +389,37 @@ argumentos caen solas en la nueva.
 
 **Prueba.** `tests/ensayo-dinero.sql`, ocho pasos, los ocho en verde contra
 producción en transacción revertida.
+
+---
+
+## 2026-10-26 · La liquidación del 40%, a mano y a propósito
+
+**Decisión.** El 40% restante del flete ya se puede facturar, pero **no se
+dispara solo**: lo pulsa el operador con un botón. `facturar_liquidacion()`
+valida que quien llama sea operador, que el envío exista y tenga precio, y
+que no haya ya una liquidación. Un índice único en la base impide dos
+anticipos o dos liquidaciones por envío — lo impide la base, no el botón.
+
+**Por qué a mano.** *Cuándo* se cobra la liquidación es una decisión de Quique
+que sigue abierta. Automatizarla ahora sería inventar la regla. Cuando él
+diga "al entregar" o "a 15 días", esto se vuelve un disparador, no un
+rediseño.
+
+**La parte que sí es dura.** La liquidación **no** es un 40% recalculado: es
+`precio − lo ya facturado de anticipo`. Con un precio de 9,999 el anticipo
+redondea a 5,999; si la liquidación fuera "40% del precio" las dos facturas no
+sumarían el precio. Esa es aritmética, no negocio, y por eso sí va fija.
+`tests/ensayo-liquidacion.sql` vigila exactamente eso en el paso 3.
+
+**En pantalla.** La consola de operación estrena arriba los dos números del
+negocio: facturado a embarcadores y comisión de FleetWeb, con el conteo de
+envíos a los que todavía les falta el costo del transportista. Debajo, cada
+envío muestra su comisión y su botón de liquidación.
+
+**Una línea que no se quita.** Junto a los totales dice que "facturado" es lo
+que se le cobró al embarcador, **no lo que entró al banco**, porque no hay
+pasarela conectada. Sin esa línea el panel se leería como ingresos reales, que
+es justo el tipo de mentira que este proyecto no se permite.
+
+**Prueba.** `tests/ensayo-liquidacion.sql`, seis pasos, los seis en verde
+contra producción en transacción revertida.

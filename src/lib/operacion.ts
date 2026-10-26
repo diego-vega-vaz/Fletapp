@@ -11,6 +11,11 @@ import type { DbShipment, DbQuote, DbProfile } from './db'
 /** Envio con los datos del embarcador ya pegados. */
 export interface EnvioOperacion extends DbShipment {
   embarcador: { nombre: string; empresa: string } | null
+  /** Copia congelada al aceptar la cotización. Null en envíos anteriores al 26 oct 2026. */
+  costo_transportista: number | null
+  comision: number | null
+  /** true si ya se facturó la liquidación. Lo calcula la consulta, no el navegador. */
+  liquidado: boolean
 }
 
 export interface CotizacionOperacion extends DbQuote {
@@ -72,7 +77,32 @@ export const getEnviosOperacion = async (): Promise<EnvioOperacion[]> => {
   if (error) throw error
   const filas = (data ?? []) as DbShipment[]
   const perfiles = await pegarPerfiles(filas)
-  return filas.map(f => ({ ...f, embarcador: comoEmbarcador(perfiles.get(f.user_id)) }))
+
+  // Qué envíos ya tienen su liquidación facturada. Una sola consulta, no una
+  // por envío.
+  const { data: liq } = await supabase
+    .from('invoices')
+    .select('shipment_id')
+    .eq('tipo', 'liquidacion')
+  const yaLiquidados = new Set((liq ?? []).map(i => i.shipment_id as string))
+
+  return filas.map(f => ({
+    ...f,
+    embarcador: comoEmbarcador(perfiles.get(f.user_id)),
+    liquidado: yaLiquidados.has(f.id),
+  })) as EnvioOperacion[]
+}
+
+/**
+ * Factura el 40% que falta. CUÁNDO se cobra sigue siendo decisión del cliente,
+ * así que esto no se dispara solo: lo pulsa el operador. El monto no es un 40%
+ * recalculado sino precio − anticipo, para que las dos facturas den exactamente
+ * el precio sin perder un peso en el redondeo.
+ */
+export const facturarLiquidacion = async (envioId: string) => {
+  const { data, error } = await supabase.rpc('facturar_liquidacion', { envio_id: envioId })
+  if (error) throw new Error(error.message)
+  return data
 }
 
 export const getCotizacionesOperacion = async (): Promise<CotizacionOperacion[]> => {
