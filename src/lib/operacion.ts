@@ -18,6 +18,10 @@ export interface CotizacionOperacion extends DbQuote {
   price_breakdown: Record<string, unknown> | null
   aprobada_por: string | null
   aprobada_en: string | null
+  /** Lo que se le paga al transportista. Null = todavía no se sabe. */
+  costo_transportista: number | null
+  /** La calcula la base: price − costo_transportista. No se escribe a mano. */
+  comision: number | null
 }
 
 /** Una fila de `envios_en_riesgo()`. La calcula el servidor, no el navegador. */
@@ -97,16 +101,24 @@ export const getEnviosEnRiesgo = async (): Promise<EnvioEnRiesgo[]> => {
 /**
  * Aprueba una cotizacion y la libera al embarcador. `precioFinal` en null deja
  * el precio sugerido por el servidor; si lo cambias, el servidor exige nota.
+ *
+ * `costo` es lo que se le va a pagar al transportista. Va en null mientras no
+ * se sepa — al principio se cotiza antes de llamar al transportista. Si se
+ * manda, el servidor rechaza cualquier cosa que deje la comisión en cero o en
+ * negativo: aprobar un flete que pierde dinero tiene que ser una decisión
+ * consciente, no un dedazo.
  */
 export const aprobarCotizacion = async (
   cotizacionId: string,
   precioFinal?: number | null,
   nota?: string,
+  costo?: number | null,
 ) => {
   const { data, error } = await supabase.rpc('aprobar_cotizacion', {
     cotizacion: cotizacionId,
     precio_final: precioFinal ?? null,
     nota: nota?.trim() || null,
+    costo: costo ?? null,
   })
   if (error) throw new Error(error.message)
   return data

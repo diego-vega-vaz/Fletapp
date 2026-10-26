@@ -346,3 +346,46 @@ la firma nueva, y se les quita el permiso de ejecución a `public`, `anon` y
 `asignar_unidad(uuid, text, text, text)` y `ping_prueba_ddl()`, sobra de este
 mismo diagnóstico. Ambas están documentadas con `comment on` y sin permisos.
 Se borran cuando `DROP FUNCTION` vuelva a funcionar.
+
+---
+
+## 2026-10-26 · La comisión deja de ser una cuenta mental
+
+**Decisión.** La cotización ya guarda `costo_transportista` —lo que se le paga
+al transportista— y `comision`, que es una **columna generada**: `price −
+costo_transportista`. No se escribe a mano, así que no se puede desincronizar.
+El envío se lleva su propia copia de los dos al aceptarse, y esa copia se
+congela: si mañana alguien edita la cotización, el envío ya cerrado no cambia
+de margen. Un envío es un hecho, no una vista de la cotización.
+
+**Por qué no hay porcentaje de comisión.** Quique no ha cerrado ni el
+porcentaje ni quién la paga. En vez de inventar un número, la comisión es una
+resta y el operador captura el costo caso por caso, que además es el acuerdo
+de "humanos en el circuito" hasta los 30 envíos. Cuando haya tarifario y
+porcentaje cerrado, eso se vuelve una **sugerencia automática**, no un cambio
+de estructura. Esta decisión se tomó así a propósito para no bloquear el
+avance en una decisión ajena.
+
+**Reglas del servidor.** El costo tiene que ser mayor a cero; si la comisión
+sale cero o negativa, `aprobar_cotizacion()` rechaza con el monto exacto en el
+mensaje. Aprobar un flete que pierde dinero tiene que ser una decisión
+consciente, no un dedazo. Se puede aprobar **sin** costo todavía, porque al
+principio se cotiza antes de llamar al transportista; entonces la comisión
+queda **nula**, no cero. Cero sería mentira.
+
+**En pantalla.** El modal de revisar cotización tiene un campo nuevo para el
+costo y muestra la comisión en pesos y en porcentaje **antes** de aprobar, en
+verde o en rojo. El botón se bloquea si el margen es malo. La validación está
+en los dos lados: la del navegador es cortesía, la que manda es la del
+servidor.
+
+**Un estorbo más de los que no se pueden dropear.** Al agregarle el cuarto
+parámetro con default, quedaron dos `aprobar_cotizacion()` y una llamada de
+tres argumentos se volvía ambigua (*function is not unique*). Postgres no deja
+quitar un default sin `DROP`, y aquí `DROP FUNCTION` se cuelga. Lo que sí
+funciona es `ALTER FUNCTION … RENAME TO`: la vieja se renombró a
+`aprobar_cotizacion_retirada_20261026` y dejó de estorbar. Las llamadas de tres
+argumentos caen solas en la nueva.
+
+**Prueba.** `tests/ensayo-dinero.sql`, ocho pasos, los ocho en verde contra
+producción en transacción revertida.

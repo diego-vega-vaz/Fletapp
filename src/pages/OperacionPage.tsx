@@ -388,6 +388,7 @@ interface RevisarProps {
 function RevisarCotizacion({ cot, onClose, onCambio, toast }: RevisarProps) {
   const sugerido = cot.precio_sugerido ?? cot.price ?? 0
   const [precio, setPrecio] = useState(String(sugerido))
+  const [costo, setCosto] = useState(cot.costo_transportista != null ? String(cot.costo_transportista) : '')
   const [nota, setNota] = useState('')
   const [motivo, setMotivo] = useState('')
   const [vista, setVista] = useState<'aprobar' | 'rechazar'>('aprobar')
@@ -397,10 +398,19 @@ function RevisarCotizacion({ cot, onClose, onCambio, toast }: RevisarProps) {
   const valido = Number.isFinite(num) && num > 0
   const cambio = valido && num !== sugerido
 
+  // El costo es opcional: al principio se cotiza antes de hablar con el
+  // transportista. Pero si se captura, la comision se ve aqui antes de
+  // aprobar, no despues. El servidor vuelve a validar lo mismo.
+  const costoNum = costo.trim() === '' ? null : Number(costo)
+  const costoValido = costoNum === null || (Number.isFinite(costoNum) && costoNum > 0)
+  const comision = valido && costoNum !== null && costoValido ? num - costoNum : null
+  const margenMalo = comision !== null && comision <= 0
+  const margenPct = comision !== null && num > 0 ? (comision / num) * 100 : null
+
   const aprobar = async () => {
     setGuardando(true)
     try {
-      await aprobarCotizacion(cot.id, num, nota)
+      await aprobarCotizacion(cot.id, num, nota, costoNum)
       toast({ type: 'success', title: 'Cotización aprobada',
               msg: `${cot.ref_id} · ${fmtMXN(num)} MXN` })
       onCambio()
@@ -424,7 +434,7 @@ function RevisarCotizacion({ cot, onClose, onCambio, toast }: RevisarProps) {
     <>
       <Button variant="ghost" onClick={() => setVista('rechazar')}>Rechazar</Button>
       <Button onClick={aprobar} loading={guardando}
-              disabled={!valido || (cambio && !nota.trim())}>
+              disabled={!valido || !costoValido || margenMalo || (cambio && !nota.trim())}>
         Aprobar y liberar
       </Button>
     </>
@@ -453,6 +463,32 @@ function RevisarCotizacion({ cot, onClose, onCambio, toast }: RevisarProps) {
                  hint="En pesos, sin centavos. Si lo dejas igual al sugerido, no hace falta nota.">
             <Input value={precio} onChange={e => setPrecio(e.target.value)} inputMode="numeric" />
           </Field>
+          <Field label="Lo que se le paga al transportista"
+                 hint="En pesos. Déjalo vacío si todavía no lo sabes; se puede capturar después.">
+            <Input value={costo} onChange={e => setCosto(e.target.value)} inputMode="numeric"
+                   placeholder="7,500" />
+          </Field>
+
+          {!costoValido && (
+            <div style={{ fontSize: 12.5, color: 'var(--st-disputed)', marginTop: -6, marginBottom: 12 }}>
+              El costo tiene que ser un número mayor a cero.
+            </div>
+          )}
+
+          {comision !== null && (
+            <div style={{
+              marginTop: -4, marginBottom: 14, padding: '10px 12px', borderRadius: 8,
+              background: margenMalo ? '#FDECEE' : '#E8F8EA',
+              color: margenMalo ? 'var(--st-disputed)' : '#0A7D1C',
+              fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 12,
+            }}>
+              <span>{margenMalo ? 'Este flete pierde dinero' : 'Comisión de FleetWeb'}</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                {fmtMXN(comision)} MXN{margenPct !== null && ` · ${margenPct.toFixed(1)}%`}
+              </span>
+            </div>
+          )}
+
           {cambio && (
             <Field label="Por qué lo cambiaste" required
                    hint="Se guarda con la cotización. Es el dato que después dice si la fórmula sirve o no.">
